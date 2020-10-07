@@ -4,7 +4,7 @@
 
 Project git for the "Who Invented MCTS?" Masters project from the MSc. Artificial Intelligence programme at Maastricht University. This project ran from 09/2020 to 02/2021.
 
-
+## Please note step 3 in the getting started section below!
 
 
 ## Ludii Example AI
