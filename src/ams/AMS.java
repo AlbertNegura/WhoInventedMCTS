@@ -2,6 +2,7 @@ package ams;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import game.Game;
@@ -13,17 +14,18 @@ import utils.AIUtils;
 
 /**
  * A simple example implementation of a standard UCT approach.
- *
+ * <p>
  * Only supports deterministic, alternating-move games.
  *
  * @author Dennis Soemers
  */
-public class ExampleUCT extends AI
-{
+public class AMS extends AI {
 
     //-------------------------------------------------------------------------
 
-    /** Our player index */
+    /**
+     * Our player index
+     */
     protected int player = -1;
 
     //-------------------------------------------------------------------------
@@ -31,8 +33,7 @@ public class ExampleUCT extends AI
     /**
      * Constructor
      */
-    public ExampleUCT()
-    {
+    public AMS() {
         this.friendlyName = "Example UCT";
     }
 
@@ -46,8 +47,7 @@ public class ExampleUCT extends AI
                     final double maxSeconds,
                     final int maxIterations,
                     final int maxDepth
-            )
-    {
+            ) {
         // Start out by creating a new root node (no tree reuse in this example)
         final Node root = new Node(null, null, context);
 
@@ -56,77 +56,139 @@ public class ExampleUCT extends AI
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
         int numIterations = 0;
-
+        int test = 0;
+        test = AMS(game, context, 5, 4, player);
         // Our main loop through MCTS iterations
-        while
-        (
-                numIterations < maxIts && 					// Respect iteration limit
-                        System.currentTimeMillis() < stopTime && 	// Respect time limit
-                        !wantsInterrupt								// Respect GUI user clicking the pause button
-        )
-        {
-            // Start in root node
-            Node current = root;
+//        while
+//        (
+//                numIterations < maxIts && 					// Respect iteration limit
+//                        System.currentTimeMillis() < stopTime && 	// Respect time limit
+//                        !wantsInterrupt								// Respect GUI user clicking the pause button
+//        )
+//        {
+//            // Start in root node
+//            Node current = root;
+//
+//            // Traverse tree
+//            while (true)
+//            {
+//                if (current.context.trial().over())
+//                {
+//                    // We've reached a terminal state
+//                    break;
+//                }
+//
+//                current = select(current);
+//
+//                if (current.visitCount == 0)
+//                {
+//                    // We've expanded a new node, time for playout!
+//                    break;
+//                }
+//            }
+//
+//            Context contextEnd = current.context;
+//
+//            if (!contextEnd.trial().over())
+//            {
+//                // Run a playout if we don't already have a terminal game state in node
+//                contextEnd = new Context(contextEnd);
+//                game.playout
+//                        (
+//                                contextEnd,
+//                                null,
+//                                -1.0,
+//                                null,
+//                                null,
+//                                0,
+//                                -1,
+//                                0.f,
+//                                ThreadLocalRandom.current()
+//                        );
+//            }
+//
+//            // This computes utilities for all players at the of the playout,
+//            // which will all be values in [-1.0, 1.0]
+//            final double[] utilities = AIUtils.utilities(contextEnd);
+//
+//            // Backpropagate utilities through the tree
+//            while (current != null)
+//            {
+//                current.visitCount += 1;
+//                for (int p = 1; p <= game.players().count(); ++p)
+//                {
+//                    current.scoreSums[p] += utilities[p];
+//                }
+//                current = current.parent;
+//            }
+//
+//            // Increment iteration count
+//            ++numIterations;
+//        }
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
 
-            // Traverse tree
-            while (true)
-            {
-                if (current.context.trial().over())
-                {
-                    // We've reached a terminal state
-                    break;
-                }
-
-                current = select(current);
-
-                if (current.visitCount == 0)
-                {
-                    // We've expanded a new node, time for playout!
-                    break;
-                }
-            }
-
-            Context contextEnd = current.context;
-
-            if (!contextEnd.trial().over())
-            {
-                // Run a playout if we don't already have a terminal game state in node
-                contextEnd = new Context(contextEnd);
-                game.playout
-                        (
-                                contextEnd,
-                                null,
-                                -1.0,
-                                null,
-                                null,
-                                0,
-                                -1,
-                                0.f,
-                                ThreadLocalRandom.current()
-                        );
-            }
-
-            // This computes utilities for all players at the of the playout,
-            // which will all be values in [-1.0, 1.0]
-            final double[] utilities = AIUtils.utilities(contextEnd);
-
-            // Backpropagate utilities through the tree
-            while (current != null)
-            {
-                current.visitCount += 1;
-                for (int p = 1; p <= game.players().count(); ++p)
-                {
-                    current.scoreSums[p] += utilities[p];
-                }
-                current = current.parent;
-            }
-
-            // Increment iteration count
-            ++numIterations;
-        }
 
         // Return the move we wish to play
-        return finalMoveSelection(root);
+        return legalMoves.get(test);
+    }
+
+    public int AMS(Game game, Context context, int maxIterations, int depth, int player) {
+        final Node root = new Node(null, null, context);
+        Node current = root;
+        Random rand = new Random();
+        if (depth == 0 || current.context.trial().over()) return rand.nextInt(11);
+//        System.out.println(game.players().size());
+//        System.out.println(game.players().players());
+        int iteration = 0;
+
+        int[] opponents = new int[game.players().size() - 1];
+        int idx = 0;
+        for (int p = 1; p < game.players().size(); ++p) {
+            if (p != player) {
+                opponents[idx++] = p;
+            }
+        }
+
+//        System.out.println("opponents " + opponents);
+
+        Context copyContext = new Context(context);
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        int[] values = new int[legalMoves.size()];
+        int[] actionCount = new int[legalMoves.size()];
+        Game copyGame = game;
+        for (int i = 0; i < legalMoves.size(); ++i) {
+            copyGame.apply(copyContext, legalMoves.get(i));
+            actionCount[i] = 1;
+            System.out.println(opponents[0]);
+            values[i] = AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
+            copyGame = game;
+        }
+
+        while (iteration < maxIterations) {
+            int bestMoveIndex = maxInteger(values);
+            actionCount[bestMoveIndex] += 1;
+            game.apply(copyContext, legalMoves.get(bestMoveIndex));
+            values[bestMoveIndex] = AMS(game, copyContext, maxIterations, depth - 1, opponents[0]);
+            ++iteration;
+        }
+
+        System.out.println(values);
+
+        return maxInteger(values);
+    }
+
+    public int maxInteger(int[] values){
+        int max_value = Integer.MIN_VALUE;
+        int bestInt = 0;
+        for(int j= 0; j < values.length; ++j){
+            if (values[j] > max_value){
+                max_value = values[j];
+                bestInt = j;
+            }
+        }
+        return bestInt;
     }
 
     /**
@@ -137,10 +199,8 @@ public class ExampleUCT extends AI
      * @param current
      * @return Selected node (if it has 0 visits, it will be a newly-expanded node).
      */
-    public static Node select(final Node current)
-    {
-        if (!current.unexpandedMoves.isEmpty())
-        {
+    public static Node select(final Node current) {
+        if (!current.unexpandedMoves.isEmpty()) {
             // randomly select an unexpanded move
             final Move move = current.unexpandedMoves.remove(
                     ThreadLocalRandom.current().nextInt(current.unexpandedMoves.size()));
@@ -164,26 +224,22 @@ public class ExampleUCT extends AI
         final int numChildren = current.children.size();
         final int mover = current.context.state().mover();
 
-        for (int i = 0; i < numChildren; ++i)
-        {
+        for (int i = 0; i < numChildren; ++i) {
             final Node child = current.children.get(i);
             final double exploit = child.scoreSums[mover] / child.visitCount;
             final double explore = Math.sqrt(twoParentLog / child.visitCount);
 
             final double ucb1Value = exploit + explore;
 
-            if (ucb1Value > bestValue)
-            {
+            if (ucb1Value > bestValue) {
                 bestValue = ucb1Value;
                 bestChild = child;
                 numBestFound = 1;
-            }
-            else if
+            } else if
             (
                     ucb1Value == bestValue &&
                             ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
-            )
-            {
+            ) {
                 // this case implements random tie-breaking
                 bestChild = child;
             }
@@ -200,31 +256,26 @@ public class ExampleUCT extends AI
      * @param rootNode
      * @return
      */
-    public static Move finalMoveSelection(final Node rootNode)
-    {
+    public static Move finalMoveSelection(final Node rootNode) {
         Node bestChild = null;
         int bestVisitCount = Integer.MIN_VALUE;
         int numBestFound = 0;
 
         final int numChildren = rootNode.children.size();
 
-        for (int i = 0; i < numChildren; ++i)
-        {
+        for (int i = 0; i < numChildren; ++i) {
             final Node child = rootNode.children.get(i);
             final int visitCount = child.visitCount;
 
-            if (visitCount > bestVisitCount)
-            {
+            if (visitCount > bestVisitCount) {
                 bestVisitCount = visitCount;
                 bestChild = child;
                 numBestFound = 1;
-            }
-            else if
+            } else if
             (
                     visitCount == bestVisitCount &&
                             ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
-            )
-            {
+            ) {
                 // this case implements random tie-breaking
                 bestChild = child;
             }
@@ -234,14 +285,12 @@ public class ExampleUCT extends AI
     }
 
     @Override
-    public void initAI(final Game game, final int playerID)
-    {
+    public void initAI(final Game game, final int playerID) {
         this.player = playerID;
     }
 
     @Override
-    public boolean supportsGame(final Game game)
-    {
+    public boolean supportsGame(final Game game) {
         if (game.isStochasticGame())
             return false;
 
@@ -258,27 +307,40 @@ public class ExampleUCT extends AI
      *
      * @author Dennis Soemers
      */
-    private static class Node
-    {
-        /** Our parent node */
+    private static class Node {
+        /**
+         * Our parent node
+         */
         private final Node parent;
 
-        /** The move that led from parent to this node */
+        /**
+         * The move that led from parent to this node
+         */
         private final Move moveFromParent;
 
-        /** This objects contains the game state for this node (this is why we don't support stochastic games) */
+        /**
+         * This objects contains the game state for this node (this is why we don't support stochastic games)
+         */
         private final Context context;
 
-        /** Visit count for this node */
+        /**
+         * Visit count for this node
+         */
         private int visitCount = 0;
 
-        /** For every player, sum of utilities / scores backpropagated through this node */
+        /**
+         * For every player, sum of utilities / scores backpropagated through this node
+         */
         private final double[] scoreSums;
 
-        /** Child nodes */
+        /**
+         * Child nodes
+         */
         private final List<Node> children = new ArrayList<Node>();
 
-        /** List of moves for which we did not yet create a child node */
+        /**
+         * List of moves for which we did not yet create a child node
+         */
         private final FastArrayList<Move> unexpandedMoves;
 
         /**
@@ -288,8 +350,7 @@ public class ExampleUCT extends AI
          * @param moveFromParent
          * @param context
          */
-        public Node(final Node parent, final Move moveFromParent, final Context context)
-        {
+        public Node(final Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;
