@@ -34,7 +34,7 @@ public class AMS extends AI {
      * Constructor
      */
     public AMS() {
-        this.friendlyName = "Example UCT";
+        this.friendlyName = "AMS";
     }
 
     //-------------------------------------------------------------------------
@@ -303,7 +303,7 @@ public class AMS extends AI {
     //-------------------------------------------------------------------------
 
     /**
-     * Inner class for nodes used by example UCT
+     * Inner class for nodes used by AMS
      *
      * @author Dennis Soemers
      */
