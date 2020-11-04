@@ -7,31 +7,20 @@ Project git for the "Who Invented MCTS?" Masters project from the MSc. Artificia
 ## Please note step 3 in the getting started section below!
 
 
-## Ludii Example AI
-
-[![license](https://img.shields.io/github/license/Ludeme/LudiiExampleAI)](LICENSE)
-[![release-version](https://img.shields.io/github/release-pre/Ludeme/LudiiExampleAI)](https://github.com/Ludeme/LudiiExampleAI/releases)
-![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)
-![code-size](https://img.shields.io/github/languages/code-size/Ludeme/LudiiExampleAI)
-![top-language](https://img.shields.io/github/languages/top/Ludeme/LudiiExampleAI)
-[![twitter](https://img.shields.io/twitter/follow/ludiigames?style=social)](https://twitter.com/intent/follow?screen_name=ludiigames)
+## Ludii-based AMS AI
 
 This project contains instructions and examples for the implementation of 
-third-party AI algorithms / agents for the Ludii general game system. After
-developing your own agent, you can load it locally through the GUI of the
-Ludii application, and watch it play any game supported by Ludii! 
-
-Agents implemented according to the instructions on this page will also be
-suitable for submission to any future agent-based playing competitions
-organised using the Ludii system.
+the Adaptive Multi-stage Sampling algorithm (AMS) for the Ludii General 
+Game system. This agent is meant to be loaded locally through the GUI of 
+the Ludii application, and watch it play any game supported by Ludii! 
 
 Most of the documentation found in this repository may also be found in
 the Ludii User Guide, accessible from the 
 [Ludii webpage](http://ludii.games/index.php).
 
-We also recommend taking a look at the [Ludii Tutorials](https://ludiitutorials.readthedocs.io)
-for tutorials on AI development as well as any other aspects of Ludii, and
-[Ludii Python AI](https://github.com/Ludeme/LudiiPythonAI) for implementing AIs using Python.
+We base this repository and AI on the example provided at [Ludii Tutorials](https://ludiitutorials.readthedocs.io).
+We also implement our own versions of Monte-Carlo Tree Search and various
+additional enhancements.
 
 ## Table of Contents
 - [Requirements](#requirements)
@@ -45,10 +34,8 @@ for tutorials on AI development as well as any other aspects of Ludii, and
 
 ## Requirements
 
-As of this time, only the development of agents in Java is supported. The
-**minimum version of Java** required is **Java 8**. Development of agents
-in other programming languages may be supported in the future, but there
-is no concrete timeline for when this will be supported.
+As of this time, only Java is supported. The**minimum version of Java** 
+required is **Java 8**.
 
 ## Getting Started
 
@@ -112,8 +99,9 @@ JAR file once, and then re-build your custom JAR file without changing its
 filepath, you will have to close and re-open the Ludii application if you
 wish to try loading agents from the modified JAR file.
 
-## Example Agents
+## Implemented Agents
 
+- [AMS](src/ams/AMS.java).
 - [Random AI](src/random/RandomAI.java).
 - [Example UCT](src/mcts/ExampleUCT.java) (only supports deterministic, alternating-move games).
 - [Example Decoupled UCT](src/mcts/ExampleDUCT.java) (only supporst deterministic, simultaneous-move games).
@@ -139,38 +127,32 @@ This can be done using the following BibTeX entry:
 
 ## Background Info
 
-This repository contains information and examples for the development of third-
-party AI implementations which can be loaded into the Ludii General Game System.
-Note that this repository does not contain the full Ludii system, or its
-built-in AI options.
+This repository contains a modification of the Adaptive Multi-stage Sampling
+algorithm such that it can be executed within the Ludii General Game System.
+An implementation of Monte-Carlo Tree Search and other enhancements are also
+contained within this repository. Note that this repository does not contain 
+the full Ludii system, or its built-in AI options.
 
-This work, as well as the full Ludii system itself, are developed for the
-Digital Ludeme Project. More info on the project and the system can be found on:
+This work is developed using the full Ludii system itself. More info on the 
+Ludii General Game project and the system can be found on:
 
 - http://www.ludeme.eu/
 - http://ludii.games/
 
 ## Contact Info
 
+If there are questions, suggestions, or troubleshooting issues relating
+to the algorithms implemented in this repository, please generate a new
+Issue on this repository.
+
+For Ludii-based help, see below:
+
 The preferred method for getting help with troubleshooting, suggesting or
 requesting additional functionality, or asking other questions about AI
 development for Ludii, is [creating new Issues on the github repository](https://github.com/Ludeme/LudiiExampleAI/issues).
 Alternatively, the following email address may be used: `ludii(dot)games(at)gmail(dot)com`.
 
-## Changelog
-
-- 31 August, 2020: Updated repository for compatibility with new version 1.0.5 of Ludii.
-- 16 August, 2020: Updated repository for compatibility with new version 1.0.3 of Ludii.
-- 24 July, 2020: Updated repository for compatibility with new version 1.0.0 of Ludii.
-- 4 July, 2020: Updated repository for compatibility with new version 0.9.4 of Ludii.
-- 3 April, 2020: Updated repository for compatibility with new version 0.6.1 of Ludii.
-- 13 December, 2019: Updated repository for compatibility with new version 0.5.0 of Ludii.
-- 27 November, 2019: Updated repository for compatibility with new version 0.4.1 of Ludii.
-- 6 September, 2019: Updated repository for compatibility with new version 0.3.0 of Ludii.
-- 13 August, 2019: Initial release.
 
 ## Acknowledgements
 
-This repository is part of the European Research Council-funded Digital Ludeme Project (ERC Consolidator Grant \#771292), being run by Cameron Browne at Maastricht University's Department of Data Science and Knowledge Engineering. 
-
-<a href="https://erc.europa.eu/"><img src="./resources/LOGO_ERC-FLAG_EU_.jpg" title="Funded by the European Research Council" alt="European Research Council Logo" height="384"></a>
+This repository is a fork of the Digital Ludeme Project Example AI, which is part of the Digital Ludeme Project being run by Cameron Browne at Maastricht University's Department of Data Science and Knowledge Engineering. This fork is intended for usage for the Masters Research Project course in the 2020 Autumn Semester as part of the MSc. Artificial Intelligence and MSc. Data Science for Decision Making programmes offered at Maastricht University.
