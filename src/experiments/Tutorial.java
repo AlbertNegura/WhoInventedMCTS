@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import ams.AMS;
+import ams.AMSv2;
 import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
@@ -116,10 +117,10 @@ public class Tutorial {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new RandomAI());
+                agents.add(new AMS());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMS());
+                agents.add(new AMSv2());
             }
         }
 
@@ -154,17 +155,20 @@ public class Tutorial {
                 // ask agent to select a move
                 // we'll give them a search time limit of 0.2 seconds per decision
                 // IMPORTANT: pass a copy of the context, not the context object directly
+                long startTime = System.currentTimeMillis();
+//                System.out.println(startTime);
                 final Move move = agent.selectAction
                         (
                                 game,
                                 new Context(context),
-                                0.2,
-                                2,
+                                0.5,
+                                4,
                                 2
                         );
 
                 // apply the chosen move
                 game.apply(context, move);
+                System.out.println(System.currentTimeMillis() - startTime);
             }
 
             // let's see who won

@@ -19,7 +19,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMS extends AI {
+public class AMSv2 extends AI {
 
     //-------------------------------------------------------------------------
 
@@ -33,8 +33,8 @@ public class AMS extends AI {
     /**
      * Constructor
      */
-    public AMS() {
-        this.friendlyName = "AMS";
+    public AMSv2() {
+        this.friendlyName = "AMSv2";
     }
 
     //-------------------------------------------------------------------------
@@ -56,81 +56,55 @@ public class AMS extends AI {
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
         int numIterations = 0;
-        int test = 0;
-        test = AMS(game, context, 5, 4, player);
-        // Our main loop through MCTS iterations
-//        while
-//        (
-//                numIterations < maxIts && 					// Respect iteration limit
-//                        System.currentTimeMillis() < stopTime && 	// Respect time limit
-//                        !wantsInterrupt								// Respect GUI user clicking the pause button
-//        )
-//        {
-//            // Start in root node
-//            Node current = root;
-//
-//            // Traverse tree
-//            while (true)
-//            {
-//                if (current.context.trial().over())
-//                {
-//                    // We've reached a terminal state
-//                    break;
-//                }
-//
-//                current = select(current);
-//
-//                if (current.visitCount == 0)
-//                {
-//                    // We've expanded a new node, time for playout!
-//                    break;
-//                }
-//            }
-//
-//            Context contextEnd = current.context;
-//
-//            if (!contextEnd.trial().over())
-//            {
-//                // Run a playout if we don't already have a terminal game state in node
-//                contextEnd = new Context(contextEnd);
-//                game.playout
-//                        (
-//                                contextEnd,
-//                                null,
-//                                -1.0,
-//                                null,
-//                                null,
-//                                0,
-//                                -1,
-//                                0.f,
-//                                ThreadLocalRandom.current()
-//                        );
-//            }
-//
-//            // This computes utilities for all players at the of the playout,
-//            // which will all be values in [-1.0, 1.0]
-//            final double[] utilities = AIUtils.utilities(contextEnd);
-//
-//            // Backpropagate utilities through the tree
-//            while (current != null)
-//            {
-//                current.visitCount += 1;
-//                for (int p = 1; p <= game.players().count(); ++p)
-//                {
-//                    current.scoreSums[p] += utilities[p];
-//                }
-//                current = current.parent;
-//            }
-//
-//            // Increment iteration count
-//            ++numIterations;
-//        }
-        FastArrayList<Move> legalMoves = game.moves(context).moves();
-        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+//        int test = 0;
+//        test = AMS(game, context, 5, 4, player);
+//        final Node root = new Node(null, null, context);
+        Node current = root;
+        Random rand = new Random();
+//        if (current.context.trial().over()) return rand.nextInt(11);
+//        System.out.println(game.players().size());
+//        System.out.println(game.players().players());
+        int iteration = 0;
+        System.out.println("I'm HERE");
+        int[] opponents = new int[game.players().size() - 1];
+        int idx = 0;
+        for (int p = 1; p < game.players().size(); ++p) {
+            if (p != player) {
+                opponents[idx++] = p;
+            }
+        }
+//        System.out.println("opponents " + opponents);
 
+        Context copyContext = new Context(context);
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        int[] values = new int[legalMoves.size()];
+        int[] actionCount = new int[legalMoves.size()];
+        Game copyGame = game;
+        //Initialization
+        for (int i = 0; i < legalMoves.size(); ++i) {
+            copyGame.apply(copyContext, legalMoves.get(i));
+            actionCount[i] = 1;
+            values[i] = AMS(copyGame, copyContext, maxIterations, maxDepth - 1 , opponents[0]);
+            copyGame = game;
+        }
+        //loop
+        while (iteration < maxIterations &&
+                System.currentTimeMillis() < stopTime) {
+            int bestMoveIndex = maxInteger(values);
+            actionCount[bestMoveIndex] += 1;
+            game.apply(copyContext, legalMoves.get(bestMoveIndex));
+            values[bestMoveIndex] = AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0]);
+            ++iteration;
+        }
+
+//        FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+
+        int bestMove = maxInteger(values);
 
         // Return the move we wish to play
-        return legalMoves.get(test);
+        return legalMoves.get(bestMove);
     }
 
     public int AMS(Game game, Context context, int maxIterations, int depth, int player) {
@@ -158,6 +132,7 @@ public class AMS extends AI {
         int[] values = new int[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
+        //Initialization
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
@@ -165,7 +140,7 @@ public class AMS extends AI {
             values[i] = AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
             copyGame = game;
         }
-
+        //loop
         while (iteration < maxIterations) {
             int bestMoveIndex = maxInteger(values);
             actionCount[bestMoveIndex] += 1;
@@ -176,7 +151,11 @@ public class AMS extends AI {
 
 //        System.out.println(values);
 
-        return maxInteger(values);
+        // We need to return the value of the highest action one ply deeper
+        // We get the value from the values list
+
+        int estimatedValue = maxInteger(values);
+        return values[estimatedValue];
     }
 
     public int maxInteger(int[] values){
