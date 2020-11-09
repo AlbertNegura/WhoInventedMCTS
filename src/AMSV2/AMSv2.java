@@ -90,7 +90,7 @@ public class AMSv2 extends AI {
         }
         //loop
         while (iteration < maxIterations &&
-                System.currentTimeMillis() < stopTime) {
+                System.currentTimeMillis() >= stopTime) {
             int bestMoveIndex = maxInteger(values);
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
