@@ -1,9 +1,10 @@
-package ams;
+package AMSV3;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.lang.Math;
 
 import game.Game;
 import main.collections.FastArrayList;
@@ -19,7 +20,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMSv2 extends AI {
+public class AMSV3 extends AI {
 
     //-------------------------------------------------------------------------
 
@@ -33,7 +34,7 @@ public class AMSv2 extends AI {
     /**
      * Constructor
      */
-    public AMSv2() {
+    public AMSV3() {
         this.friendlyName = "AMSv2";
     }
 
@@ -55,66 +56,9 @@ public class AMSv2 extends AI {
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
-        int numIterations = 0;
-//        int test = 0;
-//        test = AMS(game, context, 5, 4, player);
-//        final Node root = new Node(null, null, context);
-        Node current = root;
         Random rand = new Random();
-//        if (current.context.trial().over()) return rand.nextInt(11);
-//        System.out.println(game.players().size());
-//        System.out.println(game.players().players());
         int iteration = 0;
-//        System.out.println("I'm HERE");
-        int[] opponents = new int[game.players().size() - 1];
-        int idx = 0;
-        for (int p = 1; p < game.players().size(); ++p) {
-            if (p != player) {
-                opponents[idx++] = p;
-            }
-        }
-//        System.out.println("opponents " + opponents);
-
-        Context copyContext = new Context(context);
-        FastArrayList<Move> legalMoves = game.moves(context).moves();
-//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
-        int[] values = new int[legalMoves.size()];
-        int[] actionCount = new int[legalMoves.size()];
-        Game copyGame = game;
-        //Initialization
-        for (int i = 0; i < legalMoves.size(); ++i) {
-            copyGame.apply(copyContext, legalMoves.get(i));
-            actionCount[i] = 1;
-            values[i] = AMS(copyGame, copyContext, maxIterations, maxDepth - 1 , opponents[0]);
-            copyGame = game;
-        }
-        //loop
-        while (iteration < maxIterations &&
-                System.currentTimeMillis() < stopTime) {
-            int bestMoveIndex = maxInteger(values);
-            actionCount[bestMoveIndex] += 1;
-            game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            values[bestMoveIndex] = AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0]);
-            ++iteration;
-        }
-
-//        FastArrayList<Move> legalMoves = game.moves(context).moves();
-//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
-
-        int bestMove = maxInteger(values);
-
-        // Return the move we wish to play
-        return legalMoves.get(bestMove);
-    }
-
-    public int AMS(Game game, Context context, int maxIterations, int depth, int player) {
-        final Node root = new Node(null, null, context);
-        Node current = root;
-        Random rand = new Random();
-        if (depth == 0 || current.context.trial().over()) return rand.nextInt(11);
-//        System.out.println(game.players().size());
-//        System.out.println(game.players().players());
-        int iteration = 0;
+        double discountFactor = 0.9;
 
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
@@ -129,7 +73,7 @@ public class AMSv2 extends AI {
         Context copyContext = new Context(context);
         FastArrayList<Move> legalMoves = game.moves(context).moves();
 //        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
-        int[] values = new int[legalMoves.size()];
+        double [] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
         //Initialization
@@ -137,15 +81,27 @@ public class AMSv2 extends AI {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
 //            System.out.println(opponents[0]);
-            values[i] = AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
+            int randomValue = rand.nextInt(11);
+            double returnedValue = AMS(copyGame, copyContext, maxIterations, maxDepth -1 , opponents[0]);
+            values[i] = randomValue + discountFactor * returnedValue;
             copyGame = game;
         }
         //loop
+        double[] vHatValuesSum = values;
+        double[] qValue = new double[legalMoves.size()];
+        double[] qValueUCB = new double[legalMoves.size()];
         while (iteration < maxIterations) {
-            int bestMoveIndex = maxInteger(values);
+            for(int i = 0; i < legalMoves.size(); ++i){
+                int randomValue = rand.nextInt(11);
+                qValue[i] = randomValue + discountFactor / actionCount[i] * vHatValuesSum[i];
+                qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
+            }
+
+            int bestMoveIndex = maxInteger(qValueUCB);
+//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            values[bestMoveIndex] = AMS(game, copyContext, maxIterations, depth - 1, opponents[0]);
+            vHatValuesSum[bestMoveIndex] += AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0]);
             ++iteration;
         }
 
@@ -154,12 +110,105 @@ public class AMSv2 extends AI {
         // We need to return the value of the highest action one ply deeper
         // We get the value from the values list
 
-        int estimatedValue = maxInteger(values);
-        return values[estimatedValue];
+//        int estimatedValue = maxInteger(values);
+
+        // We need to return the estimated V_hat value, following the formula in the paper
+        // This is the EXIT phase of the pseudocode of the paper
+//        double estimatedReturnValue = 0;
+//        for(int i = 0; i < legalMoves.size(); ++i) {
+//            estimatedReturnValue += (actionCount[i]/maxIterations) * values[i];
+//        }
+
+
+//        FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        for(int i = 0; i < legalMoves.size(); ++i){
+            int randomValue = rand.nextInt(11);
+            qValue[i] = randomValue + discountFactor / actionCount[i] * vHatValuesSum[i];
+            qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
+        }
+
+        int bestMoveIndex = maxInteger(qValueUCB);
+//        int bestMove = maxInteger(values);
+
+        // Return the move we wish to play
+        return legalMoves.get(bestMoveIndex);
     }
 
-    public int maxInteger(int[] values){
-        int max_value = Integer.MIN_VALUE;
+    public double AMS(Game game, Context context, int maxIterations, int depth, int player) {
+        final Node root = new Node(null, null, context);
+        Node current = root;
+        Random rand = new Random();
+        if (depth == 0 || current.context.trial().over()) return 0;
+//        System.out.println(game.players().size());
+//        System.out.println(game.players().players());
+        int iteration = 0;
+        double discountFactor = 0.9;
+
+        int[] opponents = new int[game.players().size() - 1];
+        int idx = 0;
+        for (int p = 1; p < game.players().size(); ++p) {
+            if (p != player) {
+                opponents[idx++] = p;
+            }
+        }
+
+//        System.out.println("opponents " + opponents);
+
+        Context copyContext = new Context(context);
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        double [] values = new double[legalMoves.size()];
+        int[] actionCount = new int[legalMoves.size()];
+        Game copyGame = game;
+        //Initialization
+        for (int i = 0; i < legalMoves.size(); ++i) {
+            copyGame.apply(copyContext, legalMoves.get(i));
+            actionCount[i] = 1;
+//            System.out.println(opponents[0]);
+            int randomValue = rand.nextInt(11);
+            double returnedValue = AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
+            values[i] = randomValue + discountFactor * returnedValue;
+            copyGame = game;
+        }
+        //loop
+        double[] vHatValuesSum = values;
+        double[] qValue = new double[legalMoves.size()];
+        double[] qValueUCB = new double[legalMoves.size()];
+        while (iteration < maxIterations) {
+            for(int i = 0; i < legalMoves.size(); ++i){
+                int randomValue = rand.nextInt(11);
+                qValue[i] = randomValue + discountFactor / actionCount[i] * vHatValuesSum[i];
+                qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
+            }
+
+            int bestMoveIndex = maxInteger(qValueUCB);
+//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
+            actionCount[bestMoveIndex] += 1;
+            game.apply(copyContext, legalMoves.get(bestMoveIndex));
+            vHatValuesSum[bestMoveIndex] += AMS(game, copyContext, maxIterations, depth - 1, opponents[0]);
+            ++iteration;
+        }
+
+//        System.out.println(values);
+
+        // We need to return the value of the highest action one ply deeper
+        // We get the value from the values list
+
+//        int estimatedValue = maxInteger(values);
+
+        // We need to return the estimated V_hat value, following the formula in the paper
+        // This is the EXIT phase of the pseudocode of the paper
+        double estimatedReturnValue = 0;
+        for(int i = 0; i < legalMoves.size(); ++i) {
+            estimatedReturnValue += (actionCount[i]/maxIterations) * values[i];
+        }
+
+        return estimatedReturnValue;
+    }
+
+    public int maxInteger(double[] values){
+        double max_value = Integer.MIN_VALUE;
         int bestInt = 0;
         for(int j= 0; j < values.length; ++j){
             if (values[j] > max_value){

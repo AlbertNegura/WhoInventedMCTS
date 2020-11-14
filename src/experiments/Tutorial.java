@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import AMSV3.AMSV3;
 import ams.AMS;
 import ams.AMSv2;
 import game.Game;
@@ -117,10 +118,10 @@ public class Tutorial {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new AMS());
+                agents.add(new RandomAI());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMSv2());
+                agents.add(new AMSV3());
             }
         }
 
