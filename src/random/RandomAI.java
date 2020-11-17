@@ -45,6 +45,7 @@ public class RandomAI extends AI
 	)
 	{
 		FastArrayList<Move> legalMoves = game.moves(context).moves();
+//		System.out.println("This player: "+ player);
 		
 		// If we're playing a simultaneous-move game, some of the legal moves may be 
 		// for different players. Extract only the ones that we can choose.

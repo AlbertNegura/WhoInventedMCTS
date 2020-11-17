@@ -158,18 +158,20 @@ public class Tutorial {
                 // IMPORTANT: pass a copy of the context, not the context object directly
                 long startTime = System.currentTimeMillis();
 //                System.out.println(startTime);
+                FastArrayList<Move> possibleMoves = game.moves(context).moves();
+
                 final Move move = agent.selectAction
                         (
                                 game,
                                 new Context(context),
                                 0.5,
-                                4,
-                                2
+                                possibleMoves.size(),
+                                3
                         );
 
                 // apply the chosen move
                 game.apply(context, move);
-                System.out.println(System.currentTimeMillis() - startTime);
+//                System.out.println(System.currentTimeMillis() - startTime);
             }
 
             // let's see who won

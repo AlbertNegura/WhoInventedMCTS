@@ -7,7 +7,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.lang.Math;
 
 import game.Game;
+import main.collections.FVector;
 import main.collections.FastArrayList;
+import metadata.ai.Ai;
+import metadata.ai.heuristics.Heuristics;
+import metadata.ai.heuristics.terms.HeuristicTerm;
+import metadata.ai.heuristics.terms.Material;
+import metadata.ai.heuristics.terms.MobilitySimple;
+import metadata.ai.heuristics.transformations.HeuristicTransformation;
+import metadata.ai.misc.Pair;
 import util.AI;
 import util.Context;
 import util.Move;
@@ -22,6 +30,19 @@ import utils.AIUtils;
  */
 public class AMSV3 extends AI {
 
+    private Heuristics heuristicValueFunction = null;
+    private final boolean heuristicsFromMetadata = true;
+    protected double autoPlaySeconds = 0.0D;
+    protected float estimatedRootScore = 0.0F;
+    protected float maxHeuristicEval = 0.0F;
+    protected float minHeuristicEval = 0.0F;
+    protected String analysisReport = null;
+    protected FastArrayList<Move> currentRootMoves = null;
+    protected Move lastReturnedMove = null;
+    protected Context lastSearchedRootContext = null;
+    protected FVector rootValueEstimates = null;
+    protected int numPlayersInGame = 0;
+
     //-------------------------------------------------------------------------
 
     /**
@@ -35,7 +56,7 @@ public class AMSV3 extends AI {
      * Constructor
      */
     public AMSV3() {
-        this.friendlyName = "AMSv2";
+        this.friendlyName = "AMSV3";
     }
 
     //-------------------------------------------------------------------------
@@ -76,24 +97,31 @@ public class AMSV3 extends AI {
         double [] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
+        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.01F);
+
         //Initialization
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
+            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
             actionCount[i] = 1;
 //            System.out.println(opponents[0]);
-            int randomValue = rand.nextInt(11);
+//            int randomValue = rand.nextInt(11);
             double returnedValue = AMS(copyGame, copyContext, maxIterations, maxDepth -1 , opponents[0]);
-            values[i] = randomValue + discountFactor * returnedValue;
+            values[i] = reward + discountFactor * returnedValue;
             copyGame = game;
+            ++iteration;
         }
         //loop
         double[] vHatValuesSum = values;
         double[] qValue = new double[legalMoves.size()];
         double[] qValueUCB = new double[legalMoves.size()];
+        copyContext = new Context(context);
         while (iteration < maxIterations) {
             for(int i = 0; i < legalMoves.size(); ++i){
-                int randomValue = rand.nextInt(11);
-                qValue[i] = randomValue + discountFactor / actionCount[i] * vHatValuesSum[i];
+                copyGame.apply(copyContext, legalMoves.get(i));
+                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+//                int randomValue = rand.nextInt(11);
+                qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
                 qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
             }
 
@@ -122,10 +150,16 @@ public class AMSV3 extends AI {
 
 //        FastArrayList<Move> legalMoves = game.moves(context).moves();
 //        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        copyContext = new Context(context);
+
         for(int i = 0; i < legalMoves.size(); ++i){
-            int randomValue = rand.nextInt(11);
-            qValue[i] = randomValue + discountFactor / actionCount[i] * vHatValuesSum[i];
-            qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
+//            int randomValue = rand.nextInt(11);
+            copyGame.apply(copyContext, legalMoves.get(i));
+            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+
+            qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
+//            qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
+            qValueUCB[i] = qValue[i] * actionCount[i] / maxIterations;
         }
 
         int bestMoveIndex = maxInteger(qValueUCB);
@@ -161,24 +195,32 @@ public class AMSV3 extends AI {
         double [] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
+
+        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.01F);
+
         //Initialization
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
 //            System.out.println(opponents[0]);
-            int randomValue = rand.nextInt(11);
+//            int randomValue = rand.nextInt(11);
+            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+
             double returnedValue = AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
-            values[i] = randomValue + discountFactor * returnedValue;
+            values[i] = reward + discountFactor * returnedValue;
             copyGame = game;
+            ++iteration;
         }
         //loop
         double[] vHatValuesSum = values;
         double[] qValue = new double[legalMoves.size()];
         double[] qValueUCB = new double[legalMoves.size()];
+        copyContext = new Context(context);
         while (iteration < maxIterations) {
             for(int i = 0; i < legalMoves.size(); ++i){
-                int randomValue = rand.nextInt(11);
-                qValue[i] = randomValue + discountFactor / actionCount[i] * vHatValuesSum[i];
+                copyGame.apply(copyContext, legalMoves.get(i));
+                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+                qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
                 qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
             }
 
@@ -218,6 +260,7 @@ public class AMSV3 extends AI {
         }
         return bestInt;
     }
+
 
     /**
      * Selects child of the given "current" node according to UCB1 equation.
@@ -315,6 +358,28 @@ public class AMSV3 extends AI {
     @Override
     public void initAI(final Game game, final int playerID) {
         this.player = playerID;
+        if (this.heuristicsFromMetadata) {
+            Ai aiMetadata = game.metadata().ai();
+            if (aiMetadata != null && aiMetadata.heuristics() != null) {
+                this.heuristicValueFunction = aiMetadata.heuristics();
+            } else {
+                this.heuristicValueFunction = new Heuristics(new HeuristicTerm[]{new Material((HeuristicTransformation)null, 1.0F, (Pair[])null), new MobilitySimple((HeuristicTransformation)null, 0.001F)});
+            }
+        }
+
+        if (this.heuristicValueFunction != null) {
+            this.heuristicValueFunction.init(game);
+        }
+
+        this.estimatedRootScore = 0.0F;
+        this.maxHeuristicEval = 0.0F;
+        this.minHeuristicEval = 0.0F;
+        this.analysisReport = null;
+        this.currentRootMoves = null;
+        this.rootValueEstimates = null;
+        this.lastSearchedRootContext = null;
+        this.lastReturnedMove = null;
+        this.numPlayersInGame = game.players().count();
     }
 
     @Override
