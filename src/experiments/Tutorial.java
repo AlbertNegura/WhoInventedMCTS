@@ -4,21 +4,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import AMSV3.AMSV3;
-import ams.AMS;
-import ams.AMSv2;
+import MCTS_v0.mcts_v0;
 import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
 import main.collections.FastArrayList;
-import mcts.ExampleUCT;
 import random.RandomAI;
 import util.AI;
 import util.Context;
 import util.GameLoader;
 import util.Move;
 import util.Trial;
-import util.model.Model;
 import util.state.containerState.ContainerState;
 
 /**
@@ -36,8 +32,8 @@ public class Tutorial {
         System.out.println("Built-in games = " + Arrays.toString(games));
 
         // one of the games is "Amazons.lud". Let's load it
-//		Game game = GameLoader.loadGameFromName("Tic-Tac-Toe.lud");
-        Game game = GameLoader.loadGameFromName("Breakthrough.lud");
+		Game game = GameLoader.loadGameFromName("Tic-Tac-Toe.lud");
+//        Game game = GameLoader.loadGameFromName("Breakthrough.lud");
 
 
         // the game's "stateFlags" contain properties of the game that may be
@@ -121,7 +117,7 @@ public class Tutorial {
                 agents.add(new RandomAI());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMSV3());
+                agents.add(new mcts_v0());
             }
         }
 
