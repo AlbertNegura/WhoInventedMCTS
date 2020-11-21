@@ -34,8 +34,6 @@ public class mcts_v0 extends AI {
     public Move selectAction(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth) {
         // get the action by calling Monte-Carlo tree search
         return MCTS(game, context, maxSeconds, maxIterations, maxDepth);
-
-
     }
 
     private Move MCTS(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth) {
@@ -44,36 +42,136 @@ public class mcts_v0 extends AI {
 
         // calculate time to stop search in milliseconds
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
+        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
-        // keep searching until running out of time
-        while(timeLeft(stopTime)){
-            Node currentNode = root;
-            Node lastNode = null;
-
-            // The tree is traversed
-            while(currentNode == root || lastNode.children.contains(currentNode)){  // Current node is in search tree
-                lastNode = currentNode;
-                currentNode = Select(currentNode);
-            }
+        int numIterations = 0;
+        // keep searching until running out of time (ExampleUCT)
+        while(numIterations < maxIts && 					// Respect iteration limit
+                System.currentTimeMillis() < stopTime && 	// Respect time limit
+                !wantsInterrupt								// Respect GUI user clicking the pause button
+        ){
+            Node currentNode = Select(root);
             // A simulated game is played
-            float result = PlayOut(currentNode);
+            double[] result = PlayOut(currentNode);
             // A node is added
-            lastNode = Expand(lastNode, currentNode);
+            Expand(currentNode);
             // The result is backpropagated
-            currentNode = lastNode;
-            while (currentNode.parent != null){
-                Backpropagation(currentNode, result);
-                currentNode = currentNode.parent;
-            }
+            Backpropagation(currentNode, result);
+            numIterations++;
         }
         Move bestMove = getBestMove(root);
         System.out.println("timeout");
 
-
-
         // Return random move
-        return RandomMove(game, context);
+        return bestMove;
+    }
 
+    // RANDOM SELECTION STRATEGY
+    private Node Select(Node currentNode) {
+
+        // Traverse tree
+        while (true) {
+            if (currentNode.context.trial().over()) {
+                // We've reached a terminal state
+                break;
+            }
+
+            if (!currentNode.unexpandedMoves.isEmpty()) {
+                // randomly select an unexpanded move
+                final Move move = currentNode.unexpandedMoves.remove(
+                        ThreadLocalRandom.current().nextInt(currentNode.unexpandedMoves.size()));
+
+                // create a copy of context
+                final Context context = new Context(currentNode.context);
+
+                // apply the move
+                context.game().apply(context, move);
+
+                // create new node and return it
+                currentNode = new mcts_v0.Node(currentNode, move, context);
+            }
+            else if(!currentNode.children.isEmpty()){
+                // randomly select a children node
+                currentNode = currentNode.children.get(
+                        ThreadLocalRandom.current().nextInt(currentNode.children.size()));
+            }
+
+            if (currentNode.visitCount == 0) {
+                // We've expanded a new node, time for playout!
+                break;
+            }
+        }
+
+        return currentNode;
+    }
+
+    // ExampleUCT line 89
+    private double[] PlayOut(Node currentNode) {
+        Context contextEnd = currentNode.context;
+        Game game = contextEnd.game();
+        if (!contextEnd.trial().over())
+        {
+            // Run a playout if we don't already have a terminal game state in node
+            contextEnd = new Context(contextEnd);
+            game.playout
+                    (
+                            contextEnd,
+                            null,
+                            -1.0,
+                            null,
+                            null,
+                            0,
+                            -1,
+                            0.f,
+                            ThreadLocalRandom.current()
+                    );
+        }
+        return AIUtils.utilities(contextEnd);
+    }
+
+    private void Expand(Node currentNode) {
+        Node parentNode = currentNode.parent;
+        if (parentNode != null){
+            parentNode.children.add(currentNode);
+//            parentNode.unexpandedMoves.remove(parentNode.unexpandedMoves.indexOf(currentNode.moveFromParent));
+        }
+    }
+
+    // ExampleUCT line 113
+    private void Backpropagation(Node currentNode, double[] result) {
+        while (currentNode != null){
+            currentNode.visitCount++;
+            for (int player = 0; player < currentNode.context.game().players().count(); player++) {
+                currentNode.scoreSums[player] += result[player];
+            }
+            currentNode = currentNode.parent;
+        }
+    }
+
+    // ExampleUCT finalMoveSelection method
+    private Move getBestMove(Node root) {
+        mcts_v0.Node bestChild = null;
+        int bestVisitCount = Integer.MIN_VALUE;
+        int numBestFound = 0;
+
+        final int numChildren = root.children.size();
+
+        for (int i = 0; i < numChildren; ++i) {
+            final mcts_v0.Node child = root.children.get(i);
+            final int visitCount = child.visitCount;
+
+            if (visitCount > bestVisitCount) {
+                bestVisitCount = visitCount;
+                bestChild = child;
+                numBestFound = 1;
+            }
+            else if (visitCount == bestVisitCount && ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                // this case implements random tie-breaking
+                bestChild = child;
+            }
+        }
+
+        return bestChild.moveFromParent;
     }
 
     private boolean timeLeft(long stopTime) {
