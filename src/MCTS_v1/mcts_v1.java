@@ -1,4 +1,4 @@
-package MCTS_v0;
+package MCTS_v1;
 
 import game.Game;
 import main.collections.FastArrayList;
@@ -23,9 +23,9 @@ public class mcts_v1 extends AI {
     /**
      * Constructor
      */
-    public mcts_v0()
+    public mcts_v1()
     {
-        this.friendlyName = "MCTS v0";
+        this.friendlyName = "MCTS v1";
     }
 
     //-------------------------------------------------------------------------
@@ -66,6 +66,37 @@ public class mcts_v1 extends AI {
         return bestMove;
     }
 
+    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth) {
+        // initialize Monte-Carlo Tree
+        Node root = new Node(null, null, context);
+
+        // calculate time to stop search in milliseconds
+        final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
+        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
+
+        int numIterations = 0;
+        // keep searching until running out of time (ExampleUCT)
+        while(numIterations < maxIts && 					// Respect iteration limit
+                System.currentTimeMillis() < stopTime && 	// Respect time limit
+                !wantsInterrupt								// Respect GUI user clicking the pause button
+        ){
+            Node currentNode = Select(root);
+            // A simulated game is played
+            double[] result = PlayOut(currentNode);
+            // A node is added
+            Expand(currentNode);
+            // The result is backpropagated
+            Backpropagation(currentNode, result);
+            numIterations++;
+        }
+        Move bestMove = getBestMove(root);
+        System.out.println("timeout");
+
+        // Return random move
+        return bestMove;
+
+    }
+
     // RANDOM SELECTION STRATEGY
     private Node Select(Node currentNode) {
 
@@ -88,7 +119,7 @@ public class mcts_v1 extends AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new mcts_v0.Node(currentNode, move, context);
+                currentNode = new mcts_v1.Node(currentNode, move, context);
             }
             else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
@@ -150,14 +181,14 @@ public class mcts_v1 extends AI {
 
     // ExampleUCT finalMoveSelection method
     private Move getBestMove(Node root) {
-        mcts_v0.Node bestChild = null;
+        mcts_v1.Node bestChild = null;
         int bestVisitCount = Integer.MIN_VALUE;
         int numBestFound = 0;
 
         final int numChildren = root.children.size();
 
         for (int i = 0; i < numChildren; ++i) {
-            final mcts_v0.Node child = root.children.get(i);
+            final mcts_v1.Node child = root.children.get(i);
             final int visitCount = child.visitCount;
 
             if (visitCount > bestVisitCount) {
@@ -199,6 +230,11 @@ public class mcts_v1 extends AI {
         this.player = playerID;
     }
 
+    @Override
+    public boolean supportsGame(final Game game) {
+        return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
+    }
+
     //-------------------------------------------------------------------------
 
     /**
@@ -210,7 +246,7 @@ public class mcts_v1 extends AI {
         /**
          * Our parent node
          */
-        private final mcts_v0.Node parent;
+        private final mcts_v1.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -235,7 +271,7 @@ public class mcts_v1 extends AI {
         /**
          * Child nodes
          */
-        private final List<mcts_v0.Node> children = new ArrayList<mcts_v0.Node>();
+        private final List<mcts_v1.Node> children = new ArrayList<mcts_v1.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -249,7 +285,7 @@ public class mcts_v1 extends AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final mcts_v0.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final mcts_v1.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;

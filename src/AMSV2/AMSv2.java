@@ -270,13 +270,7 @@ public class AMSv2 extends AI {
 
     @Override
     public boolean supportsGame(final Game game) {
-        if (game.isStochasticGame())
-            return false;
-
-        if (!game.isAlternatingMoveGame())
-            return false;
-
-        return true;
+        return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
     }
 
     //-------------------------------------------------------------------------
