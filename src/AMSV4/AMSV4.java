@@ -1,4 +1,4 @@
-package AMSV3;
+package AMSV4;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMSV3 extends AI {
+public class AMSV4 extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
@@ -55,8 +55,8 @@ public class AMSV3 extends AI {
     /**
      * Constructor
      */
-    public AMSV3() {
-        this.friendlyName = "AMSV3";
+    public AMSV4() {
+        this.friendlyName = "AMSV4";
     }
 
     //-------------------------------------------------------------------------
@@ -102,12 +102,12 @@ public class AMSV3 extends AI {
         //Initialization
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
-            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+//            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
             actionCount[i] = 1;
 //            System.out.println(opponents[0]);
 //            int randomValue = rand.nextInt(11);
             double returnedValue = -AMS(copyGame, copyContext, maxIterations, maxDepth -1 , opponents[0]);
-            values[i] = reward + discountFactor * returnedValue;
+            values[i] = returnedValue;
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
@@ -214,7 +214,7 @@ public class AMSV3 extends AI {
             float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
             double returnedValue = -AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
-            values[i] = reward + discountFactor * returnedValue;
+            values[i] = returnedValue;
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
@@ -254,7 +254,7 @@ public class AMSV3 extends AI {
         // This is the EXIT phase of the pseudocode of the paper
         double estimatedReturnValue = 0;
         for(int i = 0; i < legalMoves.size(); ++i) {
-            estimatedReturnValue += ((double) actionCount[i]/(iteration)) * values[i];
+            estimatedReturnValue += ((double) actionCount[i]/(iteration)) * qValue[i];
         }
 
         return estimatedReturnValue;
