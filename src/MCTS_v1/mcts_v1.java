@@ -1,6 +1,10 @@
 package MCTS_v1;
 
 import game.Game;
+//Playout policies
+import policies.GreedyPolicy;
+import policies.softmax.SoftmaxPolicy;
+//utilities
 import main.collections.FastArrayList;
 import util.AI;
 import util.Context;
@@ -17,6 +21,9 @@ public class mcts_v1 extends AI {
 
     /** Our player index */
     protected int player = -1;
+    protected String analysisReport;
+    protected PlayoutStrategy;
+    protected int lastNumPlayoutActions;
 
     //-------------------------------------------------------------------------
 
@@ -26,6 +33,17 @@ public class mcts_v1 extends AI {
     public mcts_v1()
     {
         this.friendlyName = "MCTS v1";
+        this.analysisReport = null;
+        this.playoutStrategy = null;
+        protected int lastNumPlayoutActions = -1;
+    }
+
+    public mcts_v1(final PlayoutStrategy playoutStrategy)
+    {
+        this.friendlyName = "MCTS v1";
+        this.analysisReport = null;
+        this.playoutStrategy = playoutStrategy
+        protected int lastNumPlayoutActions = -1;
     }
 
     //-------------------------------------------------------------------------
@@ -66,13 +84,15 @@ public class mcts_v1 extends AI {
         return bestMove;
     }
 
-    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth) {
+    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth, int startDepth) {
+        // NOT CURRENTLY SUPPORTED - STILL TRYING TO FIGURE OUT HOW MAXN SEARCH TREES WOULD WORK WITH LUDII
         // initialize Monte-Carlo Tree
         Node root = new Node(null, null, context);
 
         // calculate time to stop search in milliseconds
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
+        final int numPlayers = game.players().count();
 
         int numIterations = 0;
         // keep searching until running out of time (ExampleUCT)
@@ -160,6 +180,28 @@ public class mcts_v1 extends AI {
         return AIUtils.utilities(contextEnd);
     }
 
+    private double[] PlayOut(Node currentNode, String strategy){
+        if (strategy.equals("random"))
+            return PlayOut(currentNode)
+        Context contextEnd = currentNode.context;
+        Game game = contextEnd.game();
+
+        if (strategy.equals("greedy")){
+            final Context playoutContext = new Context(contextEnd);
+            Trial endTrial = contextEnd.trial();
+            int numPlayoutActions = 0;
+            if (!endTrial.over()) {
+                final int numActionsBeforePlayout = contextEnd.trial().moves().size();
+                endTrial = this.playoutStrategy.runPlayout(playoutContext);
+                numPlayoutActions = endTrial.moves().size() - numActionsBeforePlayout;
+                this.lastNumPlayoutActions += playoutContext.trial().moves().size() - numActionsBeforePlayout;
+            }
+        }
+
+
+        return AIUtils.utilities(contextEnd);
+    }
+
     private void Expand(Node currentNode) {
         Node parentNode = currentNode.parent;
         if (parentNode != null){
@@ -200,6 +242,7 @@ public class mcts_v1 extends AI {
                 // this case implements random tie-breaking
                 bestChild = child;
             }
+
         }
 
         return bestChild.moveFromParent;
@@ -228,11 +271,22 @@ public class mcts_v1 extends AI {
     public void initAI(final Game game, final int playerID)
     {
         this.player = playerID;
+        this.analysisReport = null;
     }
 
     @Override
     public boolean supportsGame(final Game game) {
         return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
+    }
+
+
+    public String generateAnalysisReport() {
+        return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
+    }
+
+
+    public int getNumPlayoutActions() {
+        return this.lastNumPlayoutActions;
     }
 
     //-------------------------------------------------------------------------
