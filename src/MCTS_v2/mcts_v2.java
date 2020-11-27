@@ -5,15 +5,11 @@ import main.collections.FastArrayList;
 import util.AI;
 import util.Context;
 import util.Move;
-import util.Trial;
 import utils.AIUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
-//Playout policies
-//utilities
 
 public class mcts_v2 extends AI {
 
@@ -31,7 +27,7 @@ public class mcts_v2 extends AI {
      */
     public mcts_v2()
     {
-        this.friendlyName = "MCTS v1";
+        this.friendlyName = "MCTS v2";
         this.analysisReport = null;
     }
 
@@ -57,18 +53,16 @@ public class mcts_v2 extends AI {
                 System.currentTimeMillis() < stopTime && 	// Respect time limit
                 !wantsInterrupt								// Respect GUI user clicking the pause button
         ){
-            Node currentNode = SelectionUCT(root);
+            Node selectedNode = Selection(root);
             // A simulated game is played
-            double[] result = PlayOut(currentNode);
-            // A node is added
-            Expand(currentNode);
+            double[] result = PlayOut(selectedNode);
             // The result is backpropagated
-            Backpropagation(currentNode, result);
+            Backpropagation(selectedNode, result);
             numIterations++;
         }
         Move bestMove = finalMoveSelection(root);
 
-        // Return random move
+        // Return best move to play from root
         return bestMove;
     }
 
@@ -105,6 +99,24 @@ public class mcts_v2 extends AI {
 
     }
 
+    private Node Selection(Node currentNode){
+        // Traverse tree
+        while (true) {
+            if (currentNode.context.trial().over()) {
+                // We've reached a terminal state
+                break;
+            }
+
+            currentNode = SelectionUCT(currentNode);
+
+            if (currentNode.visitCount == 0) {
+                // We've expanded a new node, time for playout!
+                break;
+            }
+        }
+        return currentNode;
+    }
+
     private Node SelectionUCT(Node currentNode) {
         // If there is any unexpanded move from the current node...
         if (!currentNode.unexpandedMoves.isEmpty())
@@ -120,28 +132,35 @@ public class mcts_v2 extends AI {
             context.game().apply(context, move);
 
             // create new node and return it
+            // This is EXPANSION already.
             return new Node(currentNode, move, context);
         }
 
-        return SelectBestChild(currentNode);
+        return BestChild(currentNode);
     }
 
-    private Node SelectBestChild(Node currentNode){
-        final double C = 0.04f;
+    private Node BestChild(Node currentNode){
+        final double C = 0.4f;
 
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
 
         final double parentLog = Math.log(currentNode.visitCount);
+        final double twoParentLog = 2.0 * Math.log(Math.max(1, currentNode.visitCount));
 
         final int mover = currentNode.context.state().mover();
 
         for(int i = 0; i < currentNode.children.size(); i++){
             final Node child = currentNode.children.get(i);
-            final double childValue = child.scoreSums[mover] / child.visitCount;
+            final double childValue = child.scoreSums[player] / child.visitCount;
             final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
-            if(ucbValue > bestValue) {
-                bestValue = ucbValue;
+
+            final double exploit = child.scoreSums[mover] / child.visitCount;
+            final double explore = Math.sqrt(twoParentLog / child.visitCount);
+            final double ucb1Value = exploit + explore;
+
+            if(ucb1Value > bestValue) {
+                bestValue = ucb1Value;
                 bestChild = child;
             }
         }
@@ -218,15 +237,15 @@ public class mcts_v2 extends AI {
         Node parentNode = currentNode.parent;
         if (parentNode != null){
             parentNode.children.add(currentNode);
-//            parentNode.unexpandedMoves.remove(parentNode.unexpandedMoves.indexOf(currentNode.moveFromParent));
         }
     }
 
     // ExampleUCT line 113
     private void Backpropagation(Node currentNode, double[] result) {
+        final int playersCount = currentNode.context.game().players().count();
         while (currentNode != null){
-            currentNode.visitCount++;
-            for (int player = 0; player < currentNode.context.game().players().count(); player++) {
+            currentNode.visitCount += 1;
+            for (int player = 0; player < playersCount; player++) {
                 currentNode.scoreSums[player] += result[player];
             }
             currentNode = currentNode.parent;
@@ -241,11 +260,11 @@ public class mcts_v2 extends AI {
      */
     private Move finalMoveSelection(Node root) {
         Node bestChild = null;
-        double bestValue = Double.MIN_VALUE;
+        final int mover = root.context.state().mover();
+        double bestValue = Double.NEGATIVE_INFINITY;
 
         for (int i = 0; i < root.children.size(); ++i) {
             final Node child = root.children.get(i);
-            final int mover = child.context.state().mover();
             final double childValue = child.scoreSums[mover] / child.visitCount;
 
             if (childValue > bestValue) {
@@ -257,25 +276,6 @@ public class mcts_v2 extends AI {
 
         return bestChild.moveFromParent;
     }
-
-    private boolean timeLeft(long stopTime) {
-        return System.currentTimeMillis() < stopTime;
-    }
-
-    // Get random move
-    private Move RandomMove(Game game, Context context) {
-
-        FastArrayList<Move> legalMoves = game.moves(context).moves();
-
-        // If we're playing a simultaneous-move game, some of the legal moves may be
-        // for different players. Extract only the ones that we can choose.
-        if (!game.isAlternatingMoveGame())
-            legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
-
-        final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
-        return legalMoves.get(r);
-    }
-
 
     @Override
     public void initAI(final Game game, final int playerID)
