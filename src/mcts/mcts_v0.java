@@ -1,4 +1,4 @@
-package MCTS_v0;
+package mcts;
 
 import game.Game;
 import main.collections.FastArrayList;
