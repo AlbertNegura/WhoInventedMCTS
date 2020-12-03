@@ -2,6 +2,7 @@ package experiments;
 
 import AMSV3.AMSV3;
 import AMSV4.AMSV4;
+import ams.AMS;
 import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
@@ -126,14 +127,20 @@ public class Experiments {
                         }
                     }
                 }
+                long st = System.currentTimeMillis();
+
                 final Move move = agent.selectAction
                         (
                                 game,
                                 new Context(context),
-                                0.005,
-                                3,
+                                1,
+                                1000,
                                 3
                         );
+//                if(mover == 1)
+//                    System.out.print(System.currentTimeMillis() - st);
+//                if(mover == 2)
+//                    System.out.print(", " + (System.currentTimeMillis() - st) + "\n" );
 
                 // apply the chosen move
                 game.apply(context, move);
