@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import MCTS_v0.mcts_v0;
+import mcts.mcts_v0;
 import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
 import main.collections.FastArrayList;
 import random.RandomAI;
+import search.minimax.AlphaBetaSearch;
 import util.AI;
 import util.Context;
 import util.GameLoader;
@@ -117,7 +118,7 @@ public class Tutorial {
                 agents.add(new RandomAI());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new mcts_v0());
+                agents.add(new AlphaBetaSearch());
             }
         }
 

@@ -1,34 +1,44 @@
 package mcts;
 
 import game.Game;
+import game.rules.play.moves.Moves;
+import game.rules.play.moves.nonDecision.effect.requirement.Do;
 import main.collections.FastArrayList;
 import util.AI;
 import util.Context;
 import util.Move;
+import util.Trial;
 import utils.AIUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Vanilla extends AI {
+public class MCTS_NST extends AI {
 
     //-------------------------------------------------------------------------
 
     /** Our player index */
     protected int player = -1;
     protected String analysisReport;
-    protected int lastNumPlayoutActions;
+    protected ArrayList<Sequence> Gram1;
+    protected ArrayList<Sequence> Gram2;
+    protected ArrayList<Sequence> Gram3;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Vanilla()
+    public MCTS_NST()
     {
         this.friendlyName = "MCTS v2";
         this.analysisReport = null;
+        this.Gram1 = new ArrayList<>();
+        this.Gram2 = new ArrayList<>();
+        this.Gram3 = new ArrayList<>();
     }
 
     //-------------------------------------------------------------------------
@@ -190,7 +200,7 @@ public class MCTS_Vanilla extends AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new MCTS_Vanilla.Node(currentNode, move, context);
+                currentNode = new MCTS_NST.Node(currentNode, move, context);
             }
             else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
@@ -231,6 +241,95 @@ public class MCTS_Vanilla extends AI {
         // This computes utilities for all players at the of the playout,
         // which will all be values in [-1.0, 1.0]
         return AIUtils.utilities(contextEnd);
+    }
+
+    private double[] PlayOut(Node currentNode,String strategy){
+        if(strategy == "random"){
+            return PlayOut(currentNode);
+        }
+
+        if (strategy.equals("nst")){
+            Hashtable<Move, Double> actionScores = new Hashtable<Move, Double>();
+            Context contextEnd = currentNode.context;
+            Game game = contextEnd.game();
+            if (!contextEnd.trial().over())
+            {
+                // Run a playout if we don't already have a terminal game state in node
+                contextEnd = new Context(contextEnd);
+                game.playout
+                        (
+                                contextEnd,
+                                null,
+                                -1.0,
+                                null,
+                                null,
+                                0,
+                                -1,
+                                0.f,
+                                ThreadLocalRandom.current()
+                        );
+            }
+            double[] result = AIUtils.utilities(contextEnd);
+            final int playersCount = currentNode.context.game().players().count();
+
+            // Extract the sequences that appeared in the simulated tree.
+            FastArrayList<Move> history = game.moves(contextEnd).moves();
+            for(int i = history.size()-1; i >= 0; i--){
+                boolean exists = false;
+                for(int j = 0; j < Gram1.size(); j++){
+                    if (Gram1.get(j).moves.get(0) == history.get(i)){
+                        for (int player = 0; player < playersCount; player++) {
+                            Gram1.get(j).scoreSums[player] += result[player];
+                        }
+                        Gram1.get(j).visitCount++;
+                        exists = true;
+                        break;
+                    }
+                }
+                if(!exists){
+                    continue;
+                }
+                exists = false;
+                for(int j = 0; j < Gram2.size(); j++){
+                    if (Gram2.get(j).moves.get(0) == history.get(i)){
+                        for (int player = 0; player < playersCount; player++) {
+                            Gram2.get(j).scoreSums[player] += result[player];
+                        }
+                        Gram2.get(j).visitCount++;
+                        exists = true;
+                        break;
+                    }
+                }
+                if(!exists){
+                    continue;
+                }
+                exists = false;
+                for(int j = 0; j < Gram3.size(); j++){
+                    if (Gram3.get(j).moves.get(0) == history.get(i)){
+                        for (int player = 0; player < playersCount; player++) {
+                            Gram3.get(j).scoreSums[player] += result[player];
+                        }
+                        Gram3.get(j).visitCount++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        System.out.println("invalid strategy");
+        return AIUtils.utilities(currentNode.context);
+    }
+
+    public void DiscountNGrams(){
+        for (int i = 0; i < Gram1.size(); i++){
+            // What value do we multiply by y??
+        }
+        for (int i = 0; i < Gram2.size(); i++){
+            // What value do we multiply by y??
+        }
+        for (int i = 0; i < Gram3.size(); i++){
+            // What value do we multiply by y??
+        }
     }
 
     private void Expand(Node currentNode) {
@@ -294,9 +393,22 @@ public class MCTS_Vanilla extends AI {
         return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
     }
 
+    //-------------------------------------------------------------------------
 
-    public int getNumPlayoutActions() {
-        return this.lastNumPlayoutActions;
+    private static class Sequence{
+        private int visitCount;
+        private List<Move> moves;
+        private double[] scoreSums;
+
+        public Sequence(List<Move> moves, int players){
+            this.moves = moves;
+            this.visitCount++;
+            this.scoreSums = new double[players];
+        }
+
+        public void Visit(){
+            visitCount++;
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -310,7 +422,7 @@ public class MCTS_Vanilla extends AI {
         /**
          * Our parent node
          */
-        private final MCTS_Vanilla.Node parent;
+        private final MCTS_NST.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -335,7 +447,7 @@ public class MCTS_Vanilla extends AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_Vanilla.Node> children = new ArrayList<MCTS_Vanilla.Node>();
+        private final List<MCTS_NST.Node> children = new ArrayList<MCTS_NST.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -349,7 +461,7 @@ public class MCTS_Vanilla extends AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_Vanilla.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final MCTS_NST.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;
