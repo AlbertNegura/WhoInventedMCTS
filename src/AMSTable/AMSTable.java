@@ -209,7 +209,7 @@ public class AMSTable extends AI {
 
         int bestMoveIndex = maxInteger(qValueUCB);
 //        int bestMove = maxInteger(values);
-        System.out.println(transposition);
+//        System.out.println(transposition);
 
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
