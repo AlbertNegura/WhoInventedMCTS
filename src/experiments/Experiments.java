@@ -62,15 +62,15 @@ public class Experiments {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new MCTS_Vanilla());
+                agents.add(new AMSV4());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMSV4());
+                agents.add(new MCTS_Vanilla());
             }
         }
 
         // number of games we'd like to play
-        final int numGames = 100;
+        final int numGames = 20;
         int[] results = new int[2];
 
         // NOTE: in our following loop through number of games, the different
@@ -134,7 +134,7 @@ public class Experiments {
                                 game,
                                 new Context(context),
                                 1,
-                                1000,
+                                500,
                                 3
                         );
 //                if(mover == 1)
