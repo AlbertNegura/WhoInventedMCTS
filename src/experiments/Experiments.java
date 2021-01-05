@@ -1,5 +1,6 @@
 package experiments;
 
+import AMSPlayground.AMSPlayground;
 import AMSTable.AMSTable;
 import AMSV3.AMSV3;
 import AMSV4.AMSV4;
@@ -41,6 +42,7 @@ public class Experiments {
         final boolean isStochastic = ((stateFlags & GameType.Stochastic) != 0L);
         if (isStochastic)
             System.out.println(game.name() + " is stochastic.");
+
         else
             System.out.println(game.name() + " is not stochastic.");
 
@@ -67,12 +69,12 @@ public class Experiments {
                 agents.add(new RandomAI());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new MCTS_Vanilla());
+                agents.add(new AMSPlayground());
             }
         }
 
         // number of games we'd like to play
-        final int numGames = 100;
+        final int numGames = 50;
         int[] results = new int[2];
         long[] times = new long[2];
         int[] selectedActions = new int[2];
@@ -137,9 +139,9 @@ public class Experiments {
                         (
                                 game,
                                 new Context(context),
-                                1,
-                                1000000,
-                                3
+                                -1,
+                                20,
+                                4
                         );
                 long selectionTime = System.currentTimeMillis() - st;
                 if(mover == 1) {
