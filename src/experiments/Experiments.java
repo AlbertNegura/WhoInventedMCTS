@@ -8,6 +8,7 @@ import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
 import main.collections.FastArrayList;
+import mcts.ExampleUCT;
 import mcts.MCTS_Vanilla;
 import random.RandomAI;
 import util.*;
@@ -63,15 +64,15 @@ public class Experiments {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new AMSV4());
+                agents.add(new RandomAI());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMSTable());
+                agents.add(new MCTS_Vanilla());
             }
         }
 
         // number of games we'd like to play
-        final int numGames = 1;
+        final int numGames = 100;
         int[] results = new int[2];
         long[] times = new long[2];
         int[] selectedActions = new int[2];
@@ -136,18 +137,18 @@ public class Experiments {
                         (
                                 game,
                                 new Context(context),
-                                -1,
-                                50,
+                                1,
+                                1000000,
                                 3
                         );
                 long selectionTime = System.currentTimeMillis() - st;
                 if(mover == 1) {
-                    System.out.print(selectionTime);
+//                    System.out.print(selectionTime);
                     times[0] += selectionTime;
                     selectedActions[0] += 1;
                 }
                 if(mover == 2) {
-                    System.out.print(", " + selectionTime + "\n");
+//                    System.out.print(", " + selectionTime + "\n");
                     times[1] += selectionTime;
                     selectedActions[1] += 1;
                 }
@@ -172,7 +173,7 @@ public class Experiments {
 //            System.out.println("average branching player 2: " + branching2sum/branching2.size());
 
             // let's see who won
-//            System.out.println(context.trial().status());
+            System.out.println(context.trial().status());
             if(context.trial().status().winner() == 1)
                 results[0]++;
             else if (context.trial().status().winner() == 2)
