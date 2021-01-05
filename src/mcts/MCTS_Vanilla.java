@@ -153,8 +153,8 @@ public class MCTS_Vanilla extends AI {
 
         for(int i = 0; i < currentNode.children.size(); i++){
             final Node child = currentNode.children.get(i);
-            final double childValue = child.scoreSums[player] / child.visitCount;
-//            final double childValue = child.scoreSums[mover] / child.visitCount;
+//            final double childValue = child.scoreSums[player] / child.visitCount;
+            final double childValue = child.scoreSums[mover] / child.visitCount;
             final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
 
 //            final double exploit = child.scoreSums[mover] / child.visitCount;
