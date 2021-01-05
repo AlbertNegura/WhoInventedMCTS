@@ -72,6 +72,7 @@ public class MCTS_NST extends AI {
         }
         Move bestMove = finalMoveSelection(root);
 
+        DiscountNGrams();
         // Return best move to play from root
         return bestMove;
     }
@@ -283,7 +284,7 @@ public class MCTS_NST extends AI {
                 // Find the played move in the Gram1 list
                 for(int j = 0; j < Gram1.size(); j++){
                     if (Gram1.get(j).moves.get(0) == history.get(i)){
-                        for (int player = 0; player < playersCount; player++) {
+                        for (int player = 0; player <= playersCount; player++) {
                             Gram1.get(j).scoreSums[player] += result[player];
                         }
                         Gram1.get(j).visitCount++;
@@ -300,7 +301,7 @@ public class MCTS_NST extends AI {
                 for(int j = 0; j < Gram2.size(); j++){
                     if (Gram2.get(j).moves.get(0) == history.get(i)){
                         if(i + 1 >= 0 && Gram2.get(j).moves.get(1) == history.get(i+1)) {
-                            for (int player = 0; player < playersCount; player++) {
+                            for (int player = 0; player <= playersCount; player++) {
                                 Gram2.get(j).scoreSums[player] += result[player];
                             }
                             Gram2.get(j).visitCount++;
@@ -317,7 +318,7 @@ public class MCTS_NST extends AI {
                 for(int j = 0; j < Gram3.size(); j++){
                     if (Gram3.get(j).moves.get(0) == history.get(i)){
                         if(i + 2 >= 0 && Gram3.get(j).moves.get(1) == history.get(i+1) && Gram3.get(j).moves.get(2) == history.get(i+2)) {
-                            for (int player = 0; player < playersCount; player++) {
+                            for (int player = 0; player <= playersCount; player++) {
                                 Gram3.get(j).scoreSums[player] += result[player];
                             }
                             Gram3.get(j).visitCount++;
@@ -331,17 +332,22 @@ public class MCTS_NST extends AI {
 //        System.out.println("invalid strategy");
         return AIUtils.utilities(currentNode.context);
     }
-
-    // TODO
+    
     public void DiscountNGrams(){
+        float gamma = 0.9f;
         for (int i = 0; i < Gram1.size(); i++){
-            // What value do we multiply by y??
+            for(int player = 0; player < Gram1.get(i).scoreSums.length; player++){
+                Gram1.get(i).scoreSums[player] = Gram1.get(i).scoreSums[player] * gamma;
+            }
         }
         for (int i = 0; i < Gram2.size(); i++){
-            // What value do we multiply by y??
-        }
+            for(int player = 0; player < Gram2.get(i).scoreSums.length; player++){
+                Gram2.get(i).scoreSums[player] = Gram2.get(i).scoreSums[player] * gamma;
+            }        }
         for (int i = 0; i < Gram3.size(); i++){
-            // What value do we multiply by y??
+            for(int player = 0; player < Gram3.get(i).scoreSums.length; player++) {
+                Gram3.get(i).scoreSums[player] = Gram3.get(i).scoreSums[player] * gamma;
+            }
         }
     }
 
