@@ -162,7 +162,7 @@ public class MCTS_NST extends AI {
 
         for(int i = 0; i < currentNode.children.size(); i++){
             final Node child = currentNode.children.get(i);
-            final double childValue = child.scoreSums[player] / child.visitCount;
+            final double childValue = child.scoreSums[mover] / child.visitCount;
             final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
 
             final double exploit = child.scoreSums[mover] / child.visitCount;
@@ -344,7 +344,7 @@ public class MCTS_NST extends AI {
         final int playersCount = currentNode.context.game().players().count();
         while (currentNode != null){
             currentNode.visitCount += 1;
-            for (int player = 0; player < playersCount; player++) {
+            for (int player = 0; player <= playersCount; player++) {
                 currentNode.scoreSums[player] += result[player];
             }
             currentNode = currentNode.parent;
