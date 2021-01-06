@@ -36,9 +36,6 @@ public class MCTS_NST extends AI {
     {
         this.friendlyName = "MCTS NST";
         this.analysisReport = null;
-        this.Gram1 = new ArrayList<>();
-        this.Gram2 = new ArrayList<>();
-        this.Gram3 = new ArrayList<>();
     }
 
     //-------------------------------------------------------------------------
@@ -65,7 +62,7 @@ public class MCTS_NST extends AI {
         ){
             Node selectedNode = Selection(root);
             // A simulated game is played
-            double[] result = PlayOut(selectedNode, "random");
+            double[] result = PlayOut(selectedNode, "nst");
             // The result is backpropagated
             Backpropagation(selectedNode, result);
             numIterations++;
@@ -77,38 +74,38 @@ public class MCTS_NST extends AI {
         return bestMove;
     }
 
-    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth, int startDepth) {
-        // NOT CURRENTLY SUPPORTED - STILL TRYING TO FIGURE OUT HOW MAXN SEARCH TREES WOULD WORK WITH LUDII
-        // initialize Monte-Carlo Tree
-        Node root = new Node(null, null, context);
-
-        // calculate time to stop search in milliseconds
-        final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
-        final int numPlayers = game.players().count();
-
-        int numIterations = 0;
-        // keep searching until running out of time (ExampleUCT)
-        while(numIterations < maxIts && 					// Respect iteration limit
-                System.currentTimeMillis() < stopTime && 	// Respect time limit
-                !wantsInterrupt								// Respect GUI user clicking the pause button
-        ){
-            Node currentNode = RandomSelection(root);
-            // A simulated game is played
-            double[] result = PlayOut(currentNode);
-            // A node is added
-            Expand(currentNode);
-            // The result is backpropagated
-            Backpropagation(currentNode, result);
-            numIterations++;
-        }
-        Move bestMove = finalMoveSelection(root);
-        System.out.println("timeout");
-
-        // Return random move
-        return bestMove;
-
-    }
+//    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth, int startDepth) {
+//        // NOT CURRENTLY SUPPORTED - STILL TRYING TO FIGURE OUT HOW MAXN SEARCH TREES WOULD WORK WITH LUDII
+//        // initialize Monte-Carlo Tree
+//        Node root = new Node(null, null, context);
+//
+//        // calculate time to stop search in milliseconds
+//        final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
+//        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
+//        final int numPlayers = game.players().count();
+//
+//        int numIterations = 0;
+//        // keep searching until running out of time (ExampleUCT)
+//        while(numIterations < maxIts && 					// Respect iteration limit
+//                System.currentTimeMillis() < stopTime && 	// Respect time limit
+//                !wantsInterrupt								// Respect GUI user clicking the pause button
+//        ){
+//            Node currentNode = RandomSelection(root);
+//            // A simulated game is played
+//            double[] result = PlayOut(currentNode);
+//            // A node is added
+//            Expand(currentNode);
+//            // The result is backpropagated
+//            Backpropagation(currentNode, result);
+//            numIterations++;
+//        }
+//        Move bestMove = finalMoveSelection(root);
+//        System.out.println("timeout");
+//
+//        // Return random move
+//        return bestMove;
+//
+//    }
 
     private Node Selection(Node currentNode){
         // Traverse tree
@@ -213,131 +210,195 @@ public class MCTS_NST extends AI {
         return currentNode;
     }
 
-    // ExampleUCT line 89
-    private double[] PlayOut(Node currentNode) {
-        Context contextEnd = currentNode.context;
-        Game game = contextEnd.game();
+    private FastArrayList<Move> getLegalMoves(Game game, Context context){
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
 
-        int count = 0;
-        while (!contextEnd.trial().over() || count > 10000){
-            count++;
-            contextEnd = new Context(contextEnd);
-            FastArrayList<Move> legalMoves = game.moves(contextEnd).moves();
-
-//            // If we're playing a simultaneous-move game, some of the legal moves may be
-//            // for different players. Extract only the ones that we can choose.
-            if (!game.isAlternatingMoveGame())
-                legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
-
-            final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
-
-            game.apply(contextEnd, legalMoves.get(r));
-        }
-
-//        System.out.println(count);
-
-//        if (!contextEnd.trial().over())
-//        {
-//            // Run a playout if we don't already have a terminal game state in node
-//            contextEnd = new Context(contextEnd);
-//            game.playout
-//                    (
-//                            contextEnd,
-//                            null,
-//                            -1.0,
-//                            null,
-//                            null,
-//                            0,
-//                            -1,
-//                            0.f,
-//                            ThreadLocalRandom.current()
-//                    );
-//        }
-        // This computes utilities for all players at the of the playout,
-        // which will all be values in [-1.0, 1.0]
-        return AIUtils.utilities(contextEnd);
+        // If we're playing a simultaneous-move game, some of the legal moves may be
+        // for different players. Extract only the ones that we can choose.
+        if (!game.isAlternatingMoveGame())
+            legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        return legalMoves;
     }
 
     private double[] PlayOut(Node currentNode,String strategy){
         if(strategy.equals("random")){
-            return PlayOut(currentNode);
+            Context contextEnd = currentNode.context;
+            Game game = contextEnd.game();
+
+            int count = 0;
+            while (!contextEnd.trial().over() || count > 10000){
+                count++;
+                contextEnd = new Context(contextEnd);
+
+                FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
+
+                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                Move selectedMove = legalMoves.get(r);
+
+                game.apply(contextEnd, selectedMove);
+            }
+
+            // This computes utilities for all players at the of the playout,
+            // which will all be values in [-1.0, 1.0]
+            return AIUtils.utilities(contextEnd);
         }
 
         if (strategy.equals("nst")){
-//            Hashtable<Move, Double> actionScores = new Hashtable<Move, Double>();
             Context contextEnd = currentNode.context;
             Game game = contextEnd.game();
-            List<Move> h = new ArrayList<>();
-            if (!contextEnd.trial().over())
-            {
-                // Run a playout if we don't already have a terminal game state in node
-                // TODO this playout is default ludii and doesn't use NGrams
+
+            // Get history of moves from playout game.
+            List<Move> history = new ArrayList<>();
+
+            while (!contextEnd.trial().over()){
                 contextEnd = new Context(contextEnd);
-                h =  game.playout
-                        (
-                                contextEnd,
-                                null,
-                                -1.0,
-                                null,
-                                null,
-                                0,
-                                -1,
-                                0.f,
-                                ThreadLocalRandom.current()
-                        ).moves();
+
+                FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
+
+                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+//                Move selectedMove = legalMoves.get(r);
+
+                Move bestMove = null;
+                double bestScore = Double.MIN_VALUE;
+                int numBestFound = 0;
+
+                for(int m = 0; m < legalMoves.size(); m++){
+                    Move evaluatingMove = legalMoves.get(m);
+                    final int mover = contextEnd.state().mover();
+
+                    double scoreGram1 = Double.MAX_VALUE;
+                    double scoreGram2 = 0.0d;
+                    double scoreGram3 = 0.0d;
+                    int foundGrams = 1;
+
+                    for(int j = 0; j < Gram1.size(); j++){
+                        if(Gram1.get(j).moves.get(0) == evaluatingMove){
+                            scoreGram1 = Gram1.get(j).scoreSums[mover] / Gram1.get(j).visitCount;
+                            break;
+                        }
+                    }
+
+                    if(history.size()-1 >= 0) {
+                        for (int j = 0; j < Gram2.size(); j++) {
+                            if(Gram2.get(j).visitCount > 5 &&
+                                    Gram2.get(j).moves.get(0) == history.get(history.size()-1) &&
+                                    Gram2.get(j).moves.get(1) == evaluatingMove){
+                                scoreGram2 = Gram2.get(j).scoreSums[mover] / Gram2.get(j).visitCount;
+                                ++foundGrams;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(history.size()-2 >= 0){
+                        for(int j = 0; j < Gram3.size(); j++){
+                            if (Gram3.get(j).visitCount > 5 &&
+                                    Gram3.get(j).moves.get(0) == history.get(history.size()-2) &&
+                                    Gram3.get(j).moves.get(1) == history.get(history.size()-1) &&
+                                    Gram3.get(j).moves.get(2) == evaluatingMove){
+                                scoreGram3 = Gram3.get(j).scoreSums[mover] / Gram3.get(j).visitCount;
+                                ++foundGrams;
+                                break;
+                            }
+                        }
+                    }
+
+                    double moveScore = (scoreGram1 + scoreGram2 + scoreGram3) / foundGrams;
+
+                    if(moveScore > bestScore){
+                        bestScore = moveScore;
+                        bestMove = evaluatingMove;
+                        numBestFound = 1;
+                    }
+
+                    else if(moveScore == bestScore &&
+                            ThreadLocalRandom.current().nextInt() % ++ numBestFound == 0){
+                        bestMove = evaluatingMove;
+                    }
+
+                }
+
+                history.add(bestMove);
+                game.apply(contextEnd, bestMove);
             }
+
             double[] result = AIUtils.utilities(contextEnd);
-            final int playersCount = currentNode.context.game().players().count();
+            final int playersCount = currentNode.context.game().players().count()+1;
 
             // Extract the sequences that appeared in the simulated tree.
-            // Get history of moves from playout game.
-            List<Move> history = h;
-
             // Traverse history of moves from last to first
             for(int i = history.size()-1; i >= 0; i--){
                 boolean exists = false;
+                List<Move> movesSequence = new ArrayList<>();
+                movesSequence.add(history.get(i));
                 // Find the played move in the Gram1 list
                 for(int j = 0; j < Gram1.size(); j++){
-                    if (Gram1.get(j).moves.get(0) == history.get(i)){
-                        for (int player = 0; player <= playersCount; player++) {
+                    if (Gram1.get(j).moves == movesSequence){
+                        for (int player = 1; player <= playersCount; player++) {
                             Gram1.get(j).scoreSums[player] += result[player];
                         }
                         Gram1.get(j).visitCount++;
+
                         exists = true;
                         break;
                     }
                 }
 
-                // If the move was not stored in the Gram1 list there won't be more sequences with this move
+                // If the sequence was not stored in the Gram1 list...
                 if(!exists){
-                    continue;
-                }
-                exists = false;
-                for(int j = 0; j < Gram2.size(); j++){
-                    if (Gram2.get(j).moves.get(0) == history.get(i)){
-                        if(i + 1 >= 0 && Gram2.get(j).moves.get(1) == history.get(i+1)) {
-                            for (int player = 0; player <= playersCount; player++) {
-                                Gram2.get(j).scoreSums[player] += result[player];
-                            }
-                            Gram2.get(j).visitCount++;
-                            exists = true;
-                            break;
-                        }
-                    }
-                }
-                // If the move was not stored in the Gram2 list there won't be more sequences in Gram3 with this move
-                if(!exists){
-                    continue;
+                    // ... add the sequence...
+                    Gram1.add(new Sequence(movesSequence, playersCount));
                 }
 
-                for(int j = 0; j < Gram3.size(); j++){
-                    if (Gram3.get(j).moves.get(0) == history.get(i)){
-                        if(i + 2 >= 0 && Gram3.get(j).moves.get(1) == history.get(i+1) && Gram3.get(j).moves.get(2) == history.get(i+2)) {
-                            for (int player = 0; player <= playersCount; player++) {
-                                Gram3.get(j).scoreSums[player] += result[player];
+                if(i - 1 >= 0) {
+                    movesSequence = new ArrayList<>();
+                    movesSequence.add(history.get(i - 1));
+                    movesSequence.add(history.get(i));
+                    // If the sequence was stored in Gram1 there might be also in Gram2
+                    if(exists){
+                        exists = false;
+                        for (int j = 0; j < Gram2.size(); j++) {
+                            if (Gram2.get(j).moves == movesSequence) {
+                                for (int player = 1; player <= playersCount; player++) {
+                                    Gram2.get(j).scoreSums[player] += result[player];
+                                }
+                                Gram2.get(j).visitCount++;
+
+                                exists = true;
+                                break;
                             }
-                            Gram3.get(j).visitCount++;
-                            break;
+                        }
+                    }
+                    // If the sequence was not stored in the Gram2 list...
+                    if (!exists) {
+                        // ... add the sequence.
+                        Gram2.add(new Sequence(movesSequence, playersCount));
+                    }
+
+                    if(i - 2 >= 0){
+                        movesSequence = new ArrayList<>();
+                        movesSequence.add(history.get(i-2));
+                        movesSequence.add(history.get(i-1));
+                        movesSequence.add(history.get(i));
+                        // If the sequence was stored in Gram2 there might be also in Gram3
+                        if (exists){
+                            exists = false;
+                            for(int j = 0; j < Gram3.size(); j++){
+                                if (Gram3.get(j).moves == movesSequence){
+                                    for (int player = 1; player <= playersCount; player++) {
+                                        Gram3.get(j).scoreSums[player] += result[player];
+                                    }
+                                    Gram3.get(j).visitCount++;
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If the sequence was not stored in the Gram2 list...
+                        if(!exists){
+                            // ... add the sequence...
+                            Gram3.add(new Sequence(movesSequence, playersCount));
                         }
                     }
                 }
@@ -417,6 +478,10 @@ public class MCTS_NST extends AI {
     {
         this.player = playerID;
         this.analysisReport = null;
+
+        this.Gram1 = new ArrayList<>();
+        this.Gram2 = new ArrayList<>();
+        this.Gram3 = new ArrayList<>();
     }
 
     @Override
