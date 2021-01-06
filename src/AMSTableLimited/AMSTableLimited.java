@@ -1,4 +1,4 @@
-package AMSV4;
+package AMSTableLimited;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +28,12 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMSV4 extends AI {
+public class AMSTableLimited extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
+    private static int recursiveStackDepth = 0;
+    private final int maxStackDepth = 500;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -55,8 +57,8 @@ public class AMSV4 extends AI {
     /**
      * Constructor
      */
-    public AMSV4() {
-        this.friendlyName = "AMSV4";
+    public AMSTableLimited() {
+        this.friendlyName = "AMS Ltd";
     }
 
     //-------------------------------------------------------------------------
@@ -77,32 +79,41 @@ public class AMSV4 extends AI {
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
+        recursiveStackDepth = 0;
         Random rand = new Random();
         int iteration = 0;
         double discountFactor = 0.9;
 
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
-        for (int p = 1; p <= game.players().size(); ++p) {
+        for (int p = 1; p < game.players().size(); ++p) {
             if (p != player) {
                 opponents[idx++] = p;
             }
         }
 
+//        System.out.println("opponents " + opponents);
 
         Context copyContext = new Context(context);
         FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
         double[] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
-        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.01F);
+        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.001F);
 
         //Initialization
+        recursiveStackDepth = 0;
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
+//            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
             actionCount[i] = 1;
 
-            double returnedValue = -AMS(copyGame, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            recursiveStackDepth+=1;
+            double returnedValue = 0;
+            if(recursiveStackDepth < maxStackDepth) {
+                returnedValue = -AMS(copyGame, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            }
             values[i] = returnedValue;
             copyGame = game;
             ++iteration;
@@ -117,43 +128,41 @@ public class AMSV4 extends AI {
         double[] qValueUCB = new double[legalMoves.size()];
         copyContext = new Context(context);
         int legalMoveSize = iteration;
+        recursiveStackDepth = 0;
         while (iteration < legalMoveSize + maxIterations &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));
-                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
-                qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
-
+//                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+                qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
                 qValueUCB[i] = qValue[i] + Math.sqrt((2 * Math.log(iteration)) / actionCount[i]);
                 copyContext = new Context(context);
             }
 
             int bestMoveIndex = maxInteger(qValueUCB);
+//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            double test = -AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+
+            recursiveStackDepth+=1;
+            double test = 0;
+            if(recursiveStackDepth < maxStackDepth) {
+                test = -AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            }
 
             vHatValuesSum[bestMoveIndex] += test;
             ++iteration;
         }
 
-
-        // We need to return the value of the highest action one ply deeper
-        // We get the value from the values list
-
-
-        // We need to return the estimated V_hat value, following the formula in the paper
-        // This is the EXIT phase of the pseudocode of the paper
-
-
-
         copyContext = new Context(context);
 
         for (int i = 0; i < legalMoves.size(); ++i) {
+//            int randomValue = rand.nextInt(11);
             copyGame.apply(copyContext, legalMoves.get(i));
-            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+//            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
-            qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
+            qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
+//            qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
             qValueUCB[i] = qValue[i] * actionCount[i] / iteration;
             copyContext = new Context(context);
         }
@@ -165,11 +174,12 @@ public class AMSV4 extends AI {
     }
 
     public double AMS(Game game, Context context, int maxIterations, int depth, int player, long stopTime) {
+        Context copyContext = new Context(context);
         final Node root = new Node(null, null, context);
-        final int mover = root.context.state().mover();
         Node current = root;
+        final int mover = current.context.state().mover();
         Random rand = new Random();
-        if (depth == 0 || current.context.trial().over()) return 0;
+        if (depth == 0 || current.context.trial().over()) return this.heuristicValueFunction.computeValue(copyContext, mover, 0.01F);
 
         int iteration = 0;
         double discountFactor = 0.9;
@@ -183,22 +193,28 @@ public class AMSV4 extends AI {
         }
 
 
-
-        Context copyContext = new Context(context);
+        copyContext = new Context(context);
         FastArrayList<Move> legalMoves = game.moves(context).moves();
         double[] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
 
-        float heuristicScore = this.heuristicValueFunction.computeValue(context, mover, 0.01F);
+        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.01F);
 
         //Initialization
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
-            float reward = this.heuristicValueFunction.computeValue(copyContext, mover, 0.01F) - heuristicScore;
+//            System.out.println(opponents[0]);
+//            int randomValue = rand.nextInt(11);
+//            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
-            double returnedValue = -AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+
+            recursiveStackDepth+=1;
+            double returnedValue = 0;
+            if(recursiveStackDepth < maxStackDepth) {
+                returnedValue = -AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+            }
             values[i] = returnedValue;
             copyGame = game;
             ++iteration;
@@ -217,24 +233,32 @@ public class AMSV4 extends AI {
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));
-                float reward = this.heuristicValueFunction.computeValue(copyContext, mover, 0.01F) - heuristicScore;
-                qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
+//                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+                qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
                 qValueUCB[i] = qValue[i] + Math.sqrt((2 * Math.log(iteration)) / actionCount[i]);
                 copyContext = new Context(context);
             }
 
             int bestMoveIndex = maxInteger(qValueUCB);
+//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            vHatValuesSum[bestMoveIndex] += -AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+            recursiveStackDepth+=1;
+            double newReturnedValue = 0;
+            if(recursiveStackDepth < maxStackDepth) {
+                newReturnedValue = -AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+            }
+            vHatValuesSum[bestMoveIndex] += newReturnedValue;
             ++iteration;
             copyContext = new Context(context);
         }
 
+//        System.out.println(values);
 
         // We need to return the value of the highest action one ply deeper
         // We get the value from the values list
 
+//        int estimatedValue = maxInteger(values);
 
         // We need to return the estimated V_hat value, following the formula in the paper
         // This is the EXIT phase of the pseudocode of the paper
