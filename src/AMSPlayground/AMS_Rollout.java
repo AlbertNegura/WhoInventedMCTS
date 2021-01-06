@@ -9,6 +9,7 @@ import java.lang.Math;
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
+import mcts.MCTS_Vanilla;
 import metadata.ai.Ai;
 import metadata.ai.heuristics.Heuristics;
 import metadata.ai.heuristics.terms.HeuristicTerm;
@@ -28,7 +29,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMSPlayground extends AI {
+public class AMS_Rollout extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
@@ -55,8 +56,8 @@ public class AMSPlayground extends AI {
     /**
      * Constructor
      */
-    public AMSPlayground() {
-        this.friendlyName = "AMSPlayground";
+    public AMS_Rollout() {
+        this.friendlyName = "AMS_Rollout";
     }
 
     //-------------------------------------------------------------------------
@@ -89,11 +90,9 @@ public class AMSPlayground extends AI {
             }
         }
 
-//        System.out.println("opponents " + opponents);
 
         Context copyContext = new Context(context);
         FastArrayList<Move> legalMoves = game.moves(context).moves();
-//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
         double[] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
@@ -112,7 +111,7 @@ public class AMSPlayground extends AI {
         }
         //loop
         double[] vHatValuesSum = new double[legalMoves.size()];
-        for(int i = 0; i < legalMoves.size(); i++){
+        for (int i = 0; i < legalMoves.size(); i++) {
             vHatValuesSum[i] = values[i];
         }
         double[] qValue = new double[legalMoves.size()];
@@ -130,7 +129,6 @@ public class AMSPlayground extends AI {
             }
 
             int bestMoveIndex = maxInteger(qValueUCB);
-//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
             double test = -AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
@@ -142,12 +140,10 @@ public class AMSPlayground extends AI {
         copyContext = new Context(context);
 
         for (int i = 0; i < legalMoves.size(); ++i) {
-//            int randomValue = rand.nextInt(11);
             copyGame.apply(copyContext, legalMoves.get(i));
 //            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
             qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
-//            qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
             qValueUCB[i] = qValue[i] * actionCount[i] / iteration;
             copyContext = new Context(context);
         }
@@ -164,7 +160,10 @@ public class AMSPlayground extends AI {
         Node current = root;
         final int mover = current.context.state().mover();
         Random rand = new Random();
-        if (depth == 0 || current.context.trial().over()) return this.heuristicValueFunction.computeValue(copyContext, mover, 0.01F);
+        if (depth == 0 || current.context.trial().over()) {
+            double[] result = PlayOut(current);
+            return result[mover];
+        }
 
         int iteration = 0;
         double discountFactor = 0.9;
@@ -190,9 +189,6 @@ public class AMSPlayground extends AI {
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
-//            System.out.println(opponents[0]);
-//            int randomValue = rand.nextInt(11);
-//            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
             double returnedValue = -AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             values[i] = returnedValue;
@@ -202,7 +198,7 @@ public class AMSPlayground extends AI {
         }
         //loop
         double[] vHatValuesSum = new double[legalMoves.size()];
-        for(int i = 0; i < legalMoves.size(); i++){
+        for (int i = 0; i < legalMoves.size(); i++) {
             vHatValuesSum[i] = values[i];
         }
         double[] qValue = new double[legalMoves.size()];
@@ -220,7 +216,6 @@ public class AMSPlayground extends AI {
             }
 
             int bestMoveIndex = maxInteger(qValueUCB);
-//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
             vHatValuesSum[bestMoveIndex] += -AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
@@ -228,15 +223,6 @@ public class AMSPlayground extends AI {
             copyContext = new Context(context);
         }
 
-//        System.out.println(values);
-
-        // We need to return the value of the highest action one ply deeper
-        // We get the value from the values list
-
-//        int estimatedValue = maxInteger(values);
-
-        // We need to return the estimated V_hat value, following the formula in the paper
-        // This is the EXIT phase of the pseudocode of the paper
         double estimatedReturnValue = 0;
         for (int i = 0; i < legalMoves.size(); ++i) {
             estimatedReturnValue += ((double) actionCount[i] / (iteration)) * qValue[i];
@@ -255,6 +241,42 @@ public class AMSPlayground extends AI {
             }
         }
         return bestInt;
+    }
+
+    private double[] PlayOut(Node currentNode) {
+        Context contextEnd = currentNode.context;
+        Game game = contextEnd.game();
+        if (!contextEnd.trial().over())
+        {
+            // Run a playout if we don't already have a terminal game state in node
+            contextEnd = new Context(contextEnd);
+            game.playout
+                    (
+                            contextEnd,
+                            null,
+                            -1.0,
+                            null,
+                            null,
+                            0,
+                            -1,
+                            0.f,
+                            ThreadLocalRandom.current()
+                    );
+        }
+        // This computes utilities for all players at the of the playout,
+        // which will all be values in [-1.0, 1.0]
+        return AIUtils.utilities(contextEnd);
+    }
+
+    private void Backpropagation(Node currentNode, double[] result) {
+        final int playersCount = currentNode.context.game().players().count();
+        while (currentNode != null){
+            currentNode.visitCount += 1;
+            for (int player = 0; player <= playersCount; player++) {
+                currentNode.scoreSums[player] += result[player];
+            }
+            currentNode = currentNode.parent;
+        }
     }
 
 
@@ -459,4 +481,5 @@ public class AMSPlayground extends AI {
     //-------------------------------------------------------------------------
 
 }
+
 
