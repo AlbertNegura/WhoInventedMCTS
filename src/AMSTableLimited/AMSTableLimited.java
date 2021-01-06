@@ -33,7 +33,7 @@ public class AMSTableLimited extends AI {
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
     private static int recursiveStackDepth = 0;
-    private final int maxStackDepth = 50000;
+    private final int maxStackDepth = 500;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -58,7 +58,7 @@ public class AMSTableLimited extends AI {
      * Constructor
      */
     public AMSTableLimited() {
-        this.friendlyName = "AMSPlayground";
+        this.friendlyName = "AMS Ltd";
     }
 
     //-------------------------------------------------------------------------
@@ -103,6 +103,7 @@ public class AMSTableLimited extends AI {
         float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.001F);
 
         //Initialization
+        recursiveStackDepth = 0;
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
 //            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
