@@ -65,7 +65,7 @@ public class MCTS_NST extends AI {
         ){
             Node selectedNode = Selection(root);
             // A simulated game is played
-            double[] result = PlayOut(selectedNode, "nst");
+            double[] result = PlayOut(selectedNode, "random");
             // The result is backpropagated
             Backpropagation(selectedNode, result);
             numIterations++;
@@ -217,23 +217,42 @@ public class MCTS_NST extends AI {
     private double[] PlayOut(Node currentNode) {
         Context contextEnd = currentNode.context;
         Game game = contextEnd.game();
-        if (!contextEnd.trial().over())
-        {
-            // Run a playout if we don't already have a terminal game state in node
+
+        int count = 0;
+        while (!contextEnd.trial().over() || count > 10000){
+            count++;
             contextEnd = new Context(contextEnd);
-            game.playout
-                    (
-                            contextEnd,
-                            null,
-                            -1.0,
-                            null,
-                            null,
-                            0,
-                            -1,
-                            0.f,
-                            ThreadLocalRandom.current()
-                    );
+            FastArrayList<Move> legalMoves = game.moves(contextEnd).moves();
+
+//            // If we're playing a simultaneous-move game, some of the legal moves may be
+//            // for different players. Extract only the ones that we can choose.
+            if (!game.isAlternatingMoveGame())
+                legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+
+            final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+
+            game.apply(contextEnd, legalMoves.get(r));
         }
+
+//        System.out.println(count);
+
+//        if (!contextEnd.trial().over())
+//        {
+//            // Run a playout if we don't already have a terminal game state in node
+//            contextEnd = new Context(contextEnd);
+//            game.playout
+//                    (
+//                            contextEnd,
+//                            null,
+//                            -1.0,
+//                            null,
+//                            null,
+//                            0,
+//                            -1,
+//                            0.f,
+//                            ThreadLocalRandom.current()
+//                    );
+//        }
         // This computes utilities for all players at the of the playout,
         // which will all be values in [-1.0, 1.0]
         return AIUtils.utilities(contextEnd);
