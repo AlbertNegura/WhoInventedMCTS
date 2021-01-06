@@ -162,8 +162,10 @@ public class AMSPlayground extends AI {
         Context copyContext = new Context(context);
         final Node root = new Node(null, null, context);
         Node current = root;
+        final int mover = current.context.state().mover();
         Random rand = new Random();
-        if (depth == 0 || current.context.trial().over()) return this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F);
+        if (depth == 0 || current.context.trial().over()) return this.heuristicValueFunction.computeValue(copyContext, mover, 0.01F);
+
         int iteration = 0;
         double discountFactor = 0.9;
 
