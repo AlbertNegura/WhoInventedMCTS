@@ -157,7 +157,6 @@ public class MCTS_NST extends AI {
         double bestValue = Double.NEGATIVE_INFINITY;
 
         final double parentLog = Math.log(currentNode.visitCount);
-        final double twoParentLog = 2.0 * Math.log(Math.max(1, currentNode.visitCount));
 
         final int mover = currentNode.context.state().mover();
 
@@ -165,10 +164,6 @@ public class MCTS_NST extends AI {
             final Node child = currentNode.children.get(i);
             final double childValue = child.scoreSums[mover] / child.visitCount;
             final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
-
-            final double exploit = child.scoreSums[mover] / child.visitCount;
-            final double explore = Math.sqrt(twoParentLog / child.visitCount);
-            final double ucb1Value = exploit + explore;
 
             if(ucbValue > bestValue) {
                 bestValue = ucbValue;
@@ -250,15 +245,16 @@ public class MCTS_NST extends AI {
         }
 
         if (strategy.equals("nst")){
-            Hashtable<Move, Double> actionScores = new Hashtable<Move, Double>();
+//            Hashtable<Move, Double> actionScores = new Hashtable<Move, Double>();
             Context contextEnd = currentNode.context;
             Game game = contextEnd.game();
+            List<Move> h = new ArrayList<>();
             if (!contextEnd.trial().over())
             {
                 // Run a playout if we don't already have a terminal game state in node
                 // TODO this playout is default ludii and doesn't use NGrams
                 contextEnd = new Context(contextEnd);
-                game.playout
+                h =  game.playout
                         (
                                 contextEnd,
                                 null,
@@ -269,14 +265,14 @@ public class MCTS_NST extends AI {
                                 -1,
                                 0.f,
                                 ThreadLocalRandom.current()
-                        );
+                        ).moves();
             }
             double[] result = AIUtils.utilities(contextEnd);
             final int playersCount = currentNode.context.game().players().count();
 
             // Extract the sequences that appeared in the simulated tree.
             // Get history of moves from playout game.
-            FastArrayList<Move> history = game.moves(contextEnd).moves();
+            List<Move> history = h;
 
             // Traverse history of moves from last to first
             for(int i = history.size()-1; i >= 0; i--){
@@ -327,9 +323,11 @@ public class MCTS_NST extends AI {
                     }
                 }
             }
+            return AIUtils.utilities(contextEnd);
         }
 
-//        System.out.println("invalid strategy");
+        // This is a dummy return.
+        System.out.println("invalid strategy");
         return AIUtils.utilities(currentNode.context);
     }
     
