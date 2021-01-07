@@ -33,6 +33,8 @@ public class AMS_Rollout_BP extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
+    private static int recursiveStackDepth = 0;
+    private final int maxStackDepth = 50000;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -81,6 +83,8 @@ public class AMS_Rollout_BP extends AI {
         int iteration = 0;
         double discountFactor = 1.0;
 
+        recursiveStackDepth = 0;
+
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
         for (int p = 1; p <= game.players().size(); ++p) {
@@ -100,7 +104,12 @@ public class AMS_Rollout_BP extends AI {
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
-            double returnedValue = AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime)[this.player];
+
+            recursiveStackDepth+=1;
+            double returnedValue = 0;
+            if(recursiveStackDepth < maxStackDepth) {
+                returnedValue = AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime)[this.player];
+            }
             values[i] = returnedValue;
             copyGame = game;
             ++iteration;
@@ -129,7 +138,12 @@ public class AMS_Rollout_BP extends AI {
             int bestMoveIndex = maxInteger(qValueUCB);
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            double result = AMS(game, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime)[this.player];
+
+            recursiveStackDepth+=1;
+            double result = 0;
+            if(recursiveStackDepth < maxStackDepth) {
+                result = AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime)[this.player];
+            }
 
             vHatValuesSum[bestMoveIndex] += result;
             ++iteration;
@@ -187,7 +201,12 @@ public class AMS_Rollout_BP extends AI {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
 
-            double[] returnedValues = AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+            recursiveStackDepth+=1;
+            double[] returnedValues = new double[game.players().size()];
+            if(recursiveStackDepth < maxStackDepth) {
+                returnedValues = AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+            }
+
             values = Backpropagation(current, returnedValues, values, i);
             copyGame = game;
             ++iteration;
@@ -223,7 +242,13 @@ public class AMS_Rollout_BP extends AI {
             int bestMoveIndex = maxInteger(qValueUCB[mover]);
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            double[] returnedValues = AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+
+            recursiveStackDepth+=1;
+            double[] returnedValues = new double[game.players().size()];
+            if(recursiveStackDepth < maxStackDepth) {
+                returnedValues = AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
+            }
+
             vHatValuesSum = Backpropagation(current, returnedValues, vHatValuesSum, bestMoveIndex);
             ++iteration;
             copyContext = new Context(context);
@@ -380,6 +405,7 @@ public class AMS_Rollout_BP extends AI {
             }
         }
 
+        assert bestChild != null;
         return bestChild.moveFromParent;
     }
 
