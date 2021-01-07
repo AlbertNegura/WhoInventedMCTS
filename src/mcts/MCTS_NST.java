@@ -27,6 +27,10 @@ public class MCTS_NST extends AI {
     protected ArrayList<Sequence> Gram2;
     protected ArrayList<Sequence> Gram3;
 
+    protected final double eps = 0.99;
+    protected final double decayFactor = 0.9;
+    protected double playedMoves = 0;
+
     //-------------------------------------------------------------------------
 
     /**
@@ -69,7 +73,8 @@ public class MCTS_NST extends AI {
         }
         Move bestMove = finalMoveSelection(root);
 
-        DiscountNGrams();
+        ++playedMoves;
+//        DiscountNGrams();
         // Return best move to play from root
         return bestMove;
     }
@@ -255,72 +260,78 @@ public class MCTS_NST extends AI {
 
                 FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
 
-                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
 //                Move selectedMove = legalMoves.get(r);
 
                 Move bestMove = null;
-                double bestScore = Double.MIN_VALUE;
-                int numBestFound = 0;
+                final double p = ThreadLocalRandom.current().nextDouble(1d);
+                if (p <= eps){   // Explore
+                    final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                    bestMove = legalMoves.get(r);
+                }
 
-                for(int m = 0; m < legalMoves.size(); m++){
-                    Move evaluatingMove = legalMoves.get(m);
-                    final int mover = contextEnd.state().mover();
+                else {          // Exploit
+                    double bestScore = Double.NEGATIVE_INFINITY;
+                    int numBestFound = 0;
 
-                    double scoreGram1 = Double.MAX_VALUE;
-                    double scoreGram2 = 0.0d;
-                    double scoreGram3 = 0.0d;
-                    int foundGrams = 1;
+                    for (int m = 0; m < legalMoves.size(); m++) {
+                        Move evaluatingMove = legalMoves.get(m);
+                        final int mover = contextEnd.state().mover();
 
-                    for(int j = 0; j < Gram1.size(); j++){
-                        if(Gram1.get(j).moves.get(0) == evaluatingMove){
-                            scoreGram1 = Gram1.get(j).scoreSums[mover] / Gram1.get(j).visitCount;
-                            break;
-                        }
-                    }
+                        double scoreGram1 = Double.MAX_VALUE;
+                        double scoreGram2 = 0.0d;
+                        double scoreGram3 = 0.0d;
+                        int foundGrams = 1;
 
-                    if(history.size()-1 >= 0) {
-                        for (int j = 0; j < Gram2.size(); j++) {
-                            if(Gram2.get(j).visitCount > 5 &&
-                                    Gram2.get(j).moves.get(0) == history.get(history.size()-1) &&
-                                    Gram2.get(j).moves.get(1) == evaluatingMove){
-                                scoreGram2 = Gram2.get(j).scoreSums[mover] / Gram2.get(j).visitCount;
-                                ++foundGrams;
+                        for (int j = 0; j < Gram1.size(); j++) {
+                            if (Gram1.get(j).moves.get(0) == evaluatingMove) {
+                                scoreGram1 = (Gram1.get(j).scoreSums[mover] * Math.pow(decayFactor, playedMoves)) / Gram1.get(j).visitCount;
                                 break;
                             }
                         }
-                    }
 
-                    if(history.size()-2 >= 0){
-                        for(int j = 0; j < Gram3.size(); j++){
-                            if (Gram3.get(j).visitCount > 5 &&
-                                    Gram3.get(j).moves.get(0) == history.get(history.size()-2) &&
-                                    Gram3.get(j).moves.get(1) == history.get(history.size()-1) &&
-                                    Gram3.get(j).moves.get(2) == evaluatingMove){
-                                scoreGram3 = Gram3.get(j).scoreSums[mover] / Gram3.get(j).visitCount;
-                                ++foundGrams;
-                                break;
+                        if (history.size() - 1 >= 0) {
+                            for (int j = 0; j < Gram2.size(); j++) {
+                                if (Gram2.get(j).visitCount > 10 &&
+                                        Gram2.get(j).moves.get(1) == evaluatingMove &&
+                                        Gram2.get(j).moves.get(0) == history.get(history.size() - 1)) {
+                                    scoreGram2 = (Gram1.get(j).scoreSums[mover] * Math.pow(decayFactor, playedMoves)) / Gram2.get(j).visitCount;
+                                    ++foundGrams;
+                                    break;
+                                }
                             }
                         }
+
+                        if (history.size() - 2 >= 0) {
+                            for (int j = 0; j < Gram3.size(); j++) {
+                                if (Gram3.get(j).visitCount > 10 &&
+                                        Gram3.get(j).moves.get(2) == evaluatingMove &&
+                                        Gram3.get(j).moves.get(1) == history.get(history.size() - 1) &&
+                                        Gram3.get(j).moves.get(0) == history.get(history.size() - 2)) {
+                                    scoreGram3 = (Gram1.get(j).scoreSums[mover] * Math.pow(decayFactor, playedMoves)) / Gram3.get(j).visitCount;
+                                    ++foundGrams;
+                                    break;
+                                }
+                            }
+                        }
+
+                        double moveScore = (scoreGram1 + scoreGram2 + scoreGram3) / foundGrams;
+
+                        if (moveScore > bestScore) {
+                            bestScore = moveScore;
+                            bestMove = evaluatingMove;
+                            numBestFound = 1;
+                        } else if (moveScore == bestScore &&
+                                ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                            bestMove = evaluatingMove;
+                        }
+
                     }
-
-                    double moveScore = (scoreGram1 + scoreGram2 + scoreGram3) / foundGrams;
-
-                    if(moveScore > bestScore){
-                        bestScore = moveScore;
-                        bestMove = evaluatingMove;
-                        numBestFound = 1;
-                    }
-
-                    else if(moveScore == bestScore &&
-                            ThreadLocalRandom.current().nextInt() % ++ numBestFound == 0){
-                        bestMove = evaluatingMove;
-                    }
-
                 }
 
                 history.add(bestMove);
                 game.apply(contextEnd, bestMove);
             }
+//            System.out.println("COMPLET PLAYOUT");
 
             double[] result = AIUtils.utilities(contextEnd);
             final int playersCount = currentNode.context.game().players().count()+1;
@@ -337,7 +348,7 @@ public class MCTS_NST extends AI {
                         for (int player = 1; player <= playersCount; player++) {
                             Gram1.get(j).scoreSums[player] += result[player];
                         }
-                        Gram1.get(j).visitCount++;
+                        Gram1.get(j).Visit();
 
                         exists = true;
                         break;
@@ -358,11 +369,12 @@ public class MCTS_NST extends AI {
                     if(exists){
                         exists = false;
                         for (int j = 0; j < Gram2.size(); j++) {
-                            if (Gram2.get(j).moves == movesSequence) {
+                            if (Gram2.get(j).moves.get(1) == history.get(i) &&
+                                    Gram2.get(j).moves.get(0) == history.get(i-1)) {
                                 for (int player = 1; player <= playersCount; player++) {
                                     Gram2.get(j).scoreSums[player] += result[player];
                                 }
-                                Gram2.get(j).visitCount++;
+                                Gram2.get(j).Visit();
 
                                 exists = true;
                                 break;
@@ -384,11 +396,13 @@ public class MCTS_NST extends AI {
                         if (exists){
                             exists = false;
                             for(int j = 0; j < Gram3.size(); j++){
-                                if (Gram3.get(j).moves == movesSequence){
+                                if (Gram3.get(j).moves.get(2) == history.get(i) &&
+                                        Gram3.get(j).moves.get(1) == history.get(i-1) &&
+                                        Gram3.get(j).moves.get(0) == history.get(i-2)){
                                     for (int player = 1; player <= playersCount; player++) {
                                         Gram3.get(j).scoreSums[player] += result[player];
                                     }
-                                    Gram3.get(j).visitCount++;
+                                    Gram3.get(j).Visit();
                                     exists = true;
                                     break;
                                 }
@@ -467,7 +481,6 @@ public class MCTS_NST extends AI {
                 bestValue = childValue;
                 bestChild = child;
             }
-
         }
 
         return bestChild.moveFromParent;
@@ -482,6 +495,8 @@ public class MCTS_NST extends AI {
         this.Gram1 = new ArrayList<>();
         this.Gram2 = new ArrayList<>();
         this.Gram3 = new ArrayList<>();
+
+        this.playedMoves = 0;
     }
 
     @Override
@@ -497,15 +512,17 @@ public class MCTS_NST extends AI {
     //-------------------------------------------------------------------------
 
     private static class Sequence{
-        private int visitCount;
-        private List<Move> moves;
-        private double[] scoreSums;
+        public int visitCount;
+        public List<Move> moves;
+        public double[] scoreSums;
 
         public Sequence(List<Move> moves, int players){
             this.moves = moves;
-            this.visitCount = 0;
+            this.visitCount = 1;
             this.scoreSums = new double[players];
         }
+
+        public void Visit(){ ++visitCount; }
     }
 
     //-------------------------------------------------------------------------
