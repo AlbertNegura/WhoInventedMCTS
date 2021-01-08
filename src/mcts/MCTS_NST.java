@@ -260,8 +260,6 @@ public class MCTS_NST extends AI {
 
                 FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
 
-//                Move selectedMove = legalMoves.get(r);
-
                 Move bestMove = null;
                 final double p = ThreadLocalRandom.current().nextDouble(1d);
                 if (p <= eps){   // Explore
@@ -345,7 +343,7 @@ public class MCTS_NST extends AI {
                 // Find the played move in the Gram1 list
                 for(int j = 0; j < Gram1.size(); j++){
                     if (Gram1.get(j).moves == movesSequence){
-                        for (int player = 1; player <= playersCount; player++) {
+                        for (int player = 1; player < playersCount; player++) {
                             Gram1.get(j).scoreSums[player] += result[player];
                         }
                         Gram1.get(j).Visit();
@@ -371,7 +369,7 @@ public class MCTS_NST extends AI {
                         for (int j = 0; j < Gram2.size(); j++) {
                             if (Gram2.get(j).moves.get(1) == history.get(i) &&
                                     Gram2.get(j).moves.get(0) == history.get(i-1)) {
-                                for (int player = 1; player <= playersCount; player++) {
+                                for (int player = 1; player < playersCount; player++) {
                                     Gram2.get(j).scoreSums[player] += result[player];
                                 }
                                 Gram2.get(j).Visit();
@@ -399,7 +397,7 @@ public class MCTS_NST extends AI {
                                 if (Gram3.get(j).moves.get(2) == history.get(i) &&
                                         Gram3.get(j).moves.get(1) == history.get(i-1) &&
                                         Gram3.get(j).moves.get(0) == history.get(i-2)){
-                                    for (int player = 1; player <= playersCount; player++) {
+                                    for (int player = 1; player < playersCount; player++) {
                                         Gram3.get(j).scoreSums[player] += result[player];
                                     }
                                     Gram3.get(j).Visit();
