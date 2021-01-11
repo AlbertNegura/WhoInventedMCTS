@@ -32,6 +32,7 @@ public class AMSPlayground extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
+    protected static final String selectionStrategy = "UCB1-Tuned"; // UCB1-Tuned, UCT
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -285,6 +286,7 @@ public class AMSPlayground extends AI {
         // use UCB1 equation to select from all children, with random tie-breaking
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
+        final double parentLog = Math.log(Math.max(1, current.visitCount));
         final double twoParentLog = 2.0 * Math.log(Math.max(1, current.visitCount));
         int numBestFound = 0;
 
@@ -294,9 +296,11 @@ public class AMSPlayground extends AI {
         for (int i = 0; i < numChildren; ++i) {
             final Node child = current.children.get(i);
             final double exploit = child.scoreSums[mover] / child.visitCount;
-            final double explore = Math.sqrt(twoParentLog / child.visitCount);
+            final double variance = selectionStrategy.equals("UCT") ? exploit : exploit * (1-exploit);
+            final double explore = selectionStrategy.equals("UCT") ? Math.sqrt(twoParentLog / child.visitCount) :
+                    Math.sqrt(parentLog / child.visitCount * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
 
-            final double ucb1Value = exploit + explore;
+            final double ucb1Value = variance + explore;
 
             if (ucb1Value > bestValue) {
                 bestValue = ucb1Value;
