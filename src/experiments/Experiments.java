@@ -1,25 +1,17 @@
 package experiments;
 
-import AMSPlayground.AMSPlayground;
-import AMSTable.AMSTable;
-import AMSV3.AMSV3;
-import AMSV4.AMSV4;
-import ams.AMS;
+
 import game.Game;
 import game.types.state.GameType;
-import main.FileHandling;
 import main.collections.FastArrayList;
-import mcts.ExampleUCT;
+import mcts.MCTS_MAST;
 import mcts.MCTS_Vanilla;
-import random.RandomAI;
 import util.*;
-import util.state.containerState.ContainerState;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+
+// Agents
 
 /**
  * A simple tutorial that demonstrates a variety of useful methods provided
@@ -31,12 +23,12 @@ public class Experiments {
 
     public static void main(final String[] args) {
         // one of the games is "Amazons.lud". Let's load it
-		Game game = GameLoader.loadGameFromName("Connect Four.lud");
+		Game game = GameLoader.loadGameFromName("Havannah.lud");
 
 
         // the game's "stateFlags" contain properties of the game that may be
         // important for some AI algorithms to know about
-        final long stateFlags = game.gameFlags();
+        final long stateFlags = game.stateFlags();
 
         // for example, we may like to know whether our game has stochastic elements
         final boolean isStochastic = ((stateFlags & GameType.Stochastic) != 0L);
@@ -66,15 +58,15 @@ public class Experiments {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new RandomAI());
+                agents.add(new MCTS_MAST());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMSPlayground());
+                agents.add(new MCTS_Vanilla());
             }
         }
 
         // number of games we'd like to play
-        final int numGames = 50;
+        final int numGames = 100;
         int[] results = new int[2];
         long[] times = new long[2];
         int[] selectedActions = new int[2];
@@ -140,7 +132,7 @@ public class Experiments {
                                 game,
                                 new Context(context),
                                 -1,
-                                20,
+                                500,
                                 4
                         );
                 long selectionTime = System.currentTimeMillis() - st;

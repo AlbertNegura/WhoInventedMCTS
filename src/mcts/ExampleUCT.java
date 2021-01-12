@@ -1,15 +1,15 @@
 package mcts;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
 import util.Context;
 import util.Move;
 import utils.AIUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * A simple example implementation of a standard UCT approach.

@@ -1,22 +1,17 @@
 package experiments;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import mcts.mcts_v0;
 import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
 import main.collections.FastArrayList;
 import random.RandomAI;
 import search.minimax.AlphaBetaSearch;
-import util.AI;
-import util.Context;
-import util.GameLoader;
-import util.Move;
-import util.Trial;
+import util.*;
 import util.state.containerState.ContainerState;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * A simple tutorial that demonstrates a variety of useful methods provided
@@ -39,7 +34,7 @@ public class Tutorial {
 
         // the game's "stateFlags" contain properties of the game that may be
         // important for some AI algorithms to know about
-        final long stateFlags = game.gameFlags();
+        final long stateFlags = game.stateFlags();
 
         // for example, we may like to know whether our game has stochastic elements
         final boolean isStochastic = ((stateFlags & GameType.Stochastic) != 0L);
