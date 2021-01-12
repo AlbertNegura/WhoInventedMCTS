@@ -1,24 +1,14 @@
-package experiments;
+package experiments.legacy;
 
 import AMSPlayground.*;
-import AMSTable.AMSTable;
-import AMSV3.AMSV3;
-import AMSV4.AMSV4;
-import ams.AMS;
 import game.Game;
 import game.types.state.GameType;
-import main.FileHandling;
 import main.collections.FastArrayList;
 import mcts.*;
-import random.RandomAI;
 import util.*;
-import util.state.containerState.ContainerState;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 /**
  * A simple tutorial that demonstrates a variety of useful methods provided
@@ -80,8 +70,8 @@ public class Experiments {
 
         // NOTE: in our following loop through number of games, the different
         // agents are always assigned the same player number. For example,
-        // Player 1 will always be random, Player 2 always UCT, Player 3
-        // always random, etc.
+        // Player 1 will always be legacy.random, Player 2 always UCT, Player 3
+        // always legacy.random, etc.
         //
         // For a fair comparison of playing strength, agent assignments to
         // player numbers should rotate through all possible permutations,

@@ -94,7 +94,7 @@ public class MCTS_Vanilla extends AI {
         Move bestMove = finalMoveSelection(root);
         System.out.println("timeout");
 
-        // Return random move
+        // Return legacy.random move
         return bestMove;
 
     }
