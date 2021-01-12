@@ -21,7 +21,6 @@ public class MCTS_NSTv2 extends AI {
     /** Our player index */
     protected int player = -1;
     protected String analysisReport;
-    protected int lastNumPlayoutActions;
 
     protected Hashtable<Integer, Gram> grams;
 
@@ -108,8 +107,7 @@ public class MCTS_NSTv2 extends AI {
             int bestMoveIndex = -1;
             final double p = ThreadLocalRandom.current().nextDouble(1d);
             if (p <= eps){   // Explore
-                final int r = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());
-                bestMoveIndex = r;
+                bestMoveIndex = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());
             }
 
             else {          // Exploit
