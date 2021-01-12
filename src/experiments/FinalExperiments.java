@@ -196,7 +196,7 @@ public class FinalExperiments {
                         results[1]++;
                 }
                 System.out.println();
-                System.out.println(games.get(g) + ": " + mctsPlayers.get(pl) + " vs " + amsPlayers.get(pl));
+                System.out.println(games.get(g) + ": " + mctsPlayers.get(pl).friendlyName + " vs " + amsPlayers.get(pl).friendlyName);
                 System.out.println("average selection times = " +
                         times[0] / selectedActions[0] + "/" +
                         times[1] / selectedActions[1]);

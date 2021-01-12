@@ -78,7 +78,7 @@ public class AMSPlayground extends AI {
 
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
+        final int maxIts = (maxIterations >= 0) ? maxDepth : 10000000;
 
         Random rand = new Random();
         int iteration = 0;
@@ -122,7 +122,7 @@ public class AMSPlayground extends AI {
         double[] qValueUCB = new double[legalMoves.size()];
         copyContext = new Context(context);
         int legalMoveSize = iteration;
-        while (iteration < legalMoveSize + maxIts &&
+        while (iteration < (legalMoveSize + maxIts) &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));

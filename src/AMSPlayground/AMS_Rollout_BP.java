@@ -79,7 +79,7 @@ public class AMS_Rollout_BP extends AI {
 
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
+        final int maxIts = (maxIterations >= 0) ? maxIterations : 10000000;
 
         int iteration = 0;
         double discountFactor = 1.0;
