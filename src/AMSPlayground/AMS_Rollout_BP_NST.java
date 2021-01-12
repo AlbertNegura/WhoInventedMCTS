@@ -235,7 +235,7 @@ public class AMS_Rollout_BP_NST extends AI {
         copyContext = new Context(context);
         int legalMoveSize = iteration;
         // Get Q value plus UCB value
-        while (iteration < legalMoveSize + maxIterations &&
+        while (iteration < legalMoveSize + 50 &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));

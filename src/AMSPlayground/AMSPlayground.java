@@ -170,7 +170,7 @@ public class AMSPlayground extends AI {
         if (depth == 0 || current.context.trial().over()) return this.heuristicValueFunction.computeValue(copyContext, mover, 0.01F);
 
         int iteration = 0;
-        double discountFactor = 0.9;
+        double discountFactor = 1.0;
 
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
