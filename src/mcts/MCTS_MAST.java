@@ -23,16 +23,17 @@ public class MCTS_MAST extends AI {
     protected Hashtable<Integer, Gram> grams;
     protected final double eps = 0.1;
     protected int iterations = 0;
-
+    protected double C;
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_MAST()
+    public MCTS_MAST(double C)
     {
         this.friendlyName = "MCTS MAST";
         this.analysisReport = null;
+        this.C = C;
     }
 
     //-------------------------------------------------------------------------
@@ -155,7 +156,6 @@ public class MCTS_MAST extends AI {
     }
 
     private Node BestChild(Node currentNode){
-        final double C = 0.4f;
 
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;

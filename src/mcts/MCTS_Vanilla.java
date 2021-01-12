@@ -20,15 +20,17 @@ public class MCTS_Vanilla extends AI {
     protected String analysisReport;
     protected int lastNumPlayoutActions;
     public int iterations = 0;
+    protected double C;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Vanilla()
+    public MCTS_Vanilla(double C)
     {
         this.friendlyName = "MCTS v2";
+        this.C = C;
     }
 
     //-------------------------------------------------------------------------
@@ -142,7 +144,6 @@ public class MCTS_Vanilla extends AI {
     }
 
     private Node BestChild(Node currentNode){
-        final double C = 0.4f;
 
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;

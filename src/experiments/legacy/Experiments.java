@@ -51,8 +51,8 @@ public class Experiments {
         // first, let's instantiate some agents
         final List<AI> agents = new ArrayList<AI>();
         agents.add(null);    // insert null at index 0, because player indices start at 1
-        MCTS_Vanilla player1 = new MCTS_Vanilla();
-        MCTS_Vanilla player2 = new MCTS_Vanilla();
+        MCTS_Vanilla player1 = new MCTS_Vanilla(0.2);
+        MCTS_Vanilla player2 = new MCTS_Vanilla(0.2);
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
@@ -64,7 +64,7 @@ public class Experiments {
         }
 
         // number of games we'd like to play
-        final int numGames = 10;
+        final int numGames = 50;
         int[] results = new int[2];
         long[] times = new long[2];
         int[] iterations = new int[2];

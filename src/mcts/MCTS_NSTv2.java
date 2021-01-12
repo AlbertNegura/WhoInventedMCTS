@@ -28,16 +28,18 @@ public class MCTS_NSTv2 extends AI {
     protected final int MIN_VISITS = 7;
     protected final double eps = 0.1;
     protected int iterations = 0;
+    protected double C;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_NSTv2()
+    public MCTS_NSTv2(double C)
     {
         this.friendlyName = "MCTS NST v2";
         this.analysisReport = null;
+        this.C = C;
     }
 
     //-------------------------------------------------------------------------
@@ -165,7 +167,6 @@ public class MCTS_NSTv2 extends AI {
     }
 
     private Node BestChild(Node currentNode){
-        final double C = 0.4f;
 
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
