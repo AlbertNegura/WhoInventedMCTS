@@ -4,7 +4,7 @@ package experiments;
 import game.Game;
 import game.types.state.GameType;
 import main.collections.FastArrayList;
-import mcts.MCTS_MAST;
+import mcts.MCTS_MAST_Tim;
 import mcts.MCTS_Vanilla;
 import util.*;
 
@@ -58,7 +58,7 @@ public class Experiments {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new MCTS_MAST());
+                agents.add(new MCTS_MAST_Tim());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
                 agents.add(new MCTS_Vanilla());
