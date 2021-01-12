@@ -66,7 +66,7 @@ public class AMS_Rollout_BP_NST extends AI {
      * Constructor
      */
     public AMS_Rollout_BP_NST() {
-        this.friendlyName = "AMS_Rollout_BP";
+        this.friendlyName = "AMS_Rollout_BP NST";
     }
 
     //-------------------------------------------------------------------------
