@@ -1,5 +1,6 @@
 package mcts;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -11,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Vanilla extends AI {
+public class MCTS_Vanilla extends Group12AI {
 
     //-------------------------------------------------------------------------
 

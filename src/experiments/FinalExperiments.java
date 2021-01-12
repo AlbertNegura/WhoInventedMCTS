@@ -1,6 +1,7 @@
 package experiments;
 
 import AMSPlayground.*;
+import Group12.Group12AI;
 import game.Game;
 import game.types.state.GameType;
 import main.collections.FastArrayList;
@@ -25,14 +26,14 @@ public class FinalExperiments {
         games.add("Reversi.lud");
         games.add("Hnefatafl.lud");
 
-        ArrayList<AI> mctsPlayers = new ArrayList<>();
+        ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_Vanilla(0));
         mctsPlayers.add(new MCTS_Vanilla(0.2));
         mctsPlayers.add(new MCTS_Vanilla(0.6));
         mctsPlayers.add(new MCTS_Vanilla(0.8));
         mctsPlayers.add(new MCTS_Vanilla(1));
 
-        ArrayList<AI> amsPlayers = new ArrayList<>();
+        ArrayList<Group12AI> amsPlayers = new ArrayList<>();
         amsPlayers.add(new MCTS_Vanilla(0.4));
         amsPlayers.add(new MCTS_Vanilla(0.4));
         amsPlayers.add(new MCTS_Vanilla(0.4));
@@ -63,7 +64,7 @@ public class FinalExperiments {
                 // now we're going to have a look at playing a few full games, using AI
 
                 // first, let's instantiate some agents
-                final List<AI> agents = new ArrayList<AI>();
+                final List<Group12AI> agents = new ArrayList<>();
                 agents.add(null);    // insert null at index 0, because player indices start at 1
                 for (int q = 0; q < 2; q++) {
                     if (q == 0) {
@@ -165,13 +166,13 @@ public class FinalExperiments {
 //                    System.out.print(selectionTime);
                                 times[0] += selectionTime;
                                 selectedActions[0] += 1;
-//                                iterations[0] += () agents.get(pl).getIterations();
+                                iterations[0] += agents.get(0).getIterations();
                             }
                             if (mover == 2) {
 //                    System.out.print(", " + selectionTime + "\n");
                                 times[1] += selectionTime;
                                 selectedActions[1] += 1;
-//                                iterations[1] += player2.getIterations();
+                                iterations[1] += agents.get(1).getIterations();
                             }
                             // apply the chosen move
                             game.apply(context, move);
