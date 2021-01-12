@@ -340,7 +340,7 @@ public class AMS_Rollout_BP extends AI {
             return new Node(current, move, context);
         }
 
-        // use UCB1 equation to select from all children, with random tie-breaking
+        // use UCB1 equation to select from all children, with legacy.random tie-breaking
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
         final double twoParentLog = 2.0 * Math.log(Math.max(1, current.visitCount));
@@ -365,7 +365,7 @@ public class AMS_Rollout_BP extends AI {
                     ucb1Value == bestValue &&
                             ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
             ) {
-                // this case implements random tie-breaking
+                // this case implements legacy.random tie-breaking
                 bestChild = child;
             }
         }
@@ -401,7 +401,7 @@ public class AMS_Rollout_BP extends AI {
                     visitCount == bestVisitCount &&
                             ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
             ) {
-                // this case implements random tie-breaking
+                // this case implements legacy.random tie-breaking
                 bestChild = child;
             }
         }

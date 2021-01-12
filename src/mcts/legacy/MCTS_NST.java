@@ -1,34 +1,28 @@
-package mcts;
+package mcts.legacy;
 
 import game.Game;
-import game.rules.play.moves.Moves;
-import game.rules.play.moves.nonDecision.effect.requirement.Do;
 import main.collections.FastArrayList;
 import util.AI;
 import util.Context;
 import util.Move;
-import util.Trial;
 import utils.AIUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_NST_Tim extends AI {
+public class MCTS_NST extends AI {
 
     //-------------------------------------------------------------------------
 
-    /**
-     * Our player index
-     */
+    /** Our player index */
     protected int player = -1;
     protected String analysisReport;
     protected ArrayList<Sequence> Gram1;
     protected ArrayList<Sequence> Gram2;
     protected ArrayList<Sequence> Gram3;
-    protected Map hashMap = new HashMap();
 
-
-    protected final double eps = 0.9;
+    protected final double eps = 0.99;
     protected final double decayFactor = 0.9;
     protected double playedMoves = 0;
 
@@ -37,7 +31,8 @@ public class MCTS_NST_Tim extends AI {
     /**
      * Constructor
      */
-    public MCTS_NST_Tim() {
+    public MCTS_NST()
+    {
         this.friendlyName = "MCTS NST";
         this.analysisReport = null;
     }
@@ -60,10 +55,10 @@ public class MCTS_NST_Tim extends AI {
 
         int numIterations = 0;
         // keep searching until running out of time (ExampleUCT)
-        while (numIterations < maxIts &&                    // Respect iteration limit
-                System.currentTimeMillis() < stopTime &&    // Respect time limit
-                !wantsInterrupt                                // Respect GUI user clicking the pause button
-        ) {
+        while(numIterations < maxIts && 					// Respect iteration limit
+                System.currentTimeMillis() < stopTime && 	// Respect time limit
+                !wantsInterrupt								// Respect GUI user clicking the pause button
+        ){
             Node selectedNode = Selection(root);
             // A simulated game is played
             double[] result = PlayOut(selectedNode, "nst");
@@ -72,7 +67,7 @@ public class MCTS_NST_Tim extends AI {
             numIterations++;
         }
         Move bestMove = finalMoveSelection(root);
-        hashMap = new HashMap();
+
         ++playedMoves;
 //        DiscountNGrams();
         // Return best move to play from root
@@ -107,12 +102,12 @@ public class MCTS_NST_Tim extends AI {
 //        Move bestMove = finalMoveSelection(root);
 //        System.out.println("timeout");
 //
-//        // Return random move
+//        // Return legacy.random move
 //        return bestMove;
 //
 //    }
 
-    private Node Selection(Node currentNode) {
+    private Node Selection(Node currentNode){
         // Traverse tree
         while (true) {
             if (currentNode.context.trial().over()) {
@@ -132,7 +127,8 @@ public class MCTS_NST_Tim extends AI {
 
     private Node SelectionUCT(Node currentNode) {
         // If there is any unexpanded move from the current node...
-        if (!currentNode.unexpandedMoves.isEmpty()) {
+        if (!currentNode.unexpandedMoves.isEmpty())
+        {
             // ... randomly select an unexpanded move
             final Move move = currentNode.unexpandedMoves.remove(
                     ThreadLocalRandom.current().nextInt(currentNode.unexpandedMoves.size()));
@@ -151,7 +147,7 @@ public class MCTS_NST_Tim extends AI {
         return BestChild(currentNode);
     }
 
-    private Node BestChild(Node currentNode) {
+    private Node BestChild(Node currentNode){
         final double C = 0.4f;
 
         Node bestChild = null;
@@ -161,12 +157,12 @@ public class MCTS_NST_Tim extends AI {
 
         final int mover = currentNode.context.state().mover();
 
-        for (int i = 0; i < currentNode.children.size(); i++) {
+        for(int i = 0; i < currentNode.children.size(); i++){
             final Node child = currentNode.children.get(i);
             final double childValue = child.scoreSums[mover] / child.visitCount;
             final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
 
-            if (ucbValue > bestValue) {
+            if(ucbValue > bestValue) {
                 bestValue = ucbValue;
                 bestChild = child;
             }
@@ -197,8 +193,9 @@ public class MCTS_NST_Tim extends AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new MCTS_NST_Tim.Node(currentNode, move, context);
-            } else if (!currentNode.children.isEmpty()) {
+                currentNode = new MCTS_NST.Node(currentNode, move, context);
+            }
+            else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
                 currentNode = currentNode.children.get(
                         ThreadLocalRandom.current().nextInt(currentNode.children.size()));
@@ -213,7 +210,7 @@ public class MCTS_NST_Tim extends AI {
         return currentNode;
     }
 
-    private FastArrayList<Move> getLegalMoves(Game game, Context context) {
+    private FastArrayList<Move> getLegalMoves(Game game, Context context){
         FastArrayList<Move> legalMoves = game.moves(context).moves();
 
         // If we're playing a simultaneous-move game, some of the legal moves may be
@@ -223,158 +220,217 @@ public class MCTS_NST_Tim extends AI {
         return legalMoves;
     }
 
-    private double[] PlayOut(Node currentNode, String strategy) {
-        Context contextEnd = currentNode.context;
-        Game game = contextEnd.game();
-        ;
-        List<Move> history = new ArrayList<>();
-        while (!contextEnd.trial().over()) {
-            contextEnd = new Context(contextEnd);
-            FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
-            final int mover = contextEnd.state().mover();
-            int numBestFound = 0;
+    private double[] PlayOut(Node currentNode,String strategy){
+        if(strategy.equals("legacy/random")){
+            Context contextEnd = currentNode.context;
+            Game game = contextEnd.game();
 
-            Move bestMove = null;
-            double bestScore = Double.NEGATIVE_INFINITY;
-            for (int m = 0; m < legalMoves.size(); m++) {
-                Move evaluatingMove = legalMoves.get(m);
-                double scoreGram1 = 100;
-                double scoreGram2 = 0.0d;
-                double scoreGram3 = 0.0d;
-                int foundGrams = 1;
+            int count = 0;
+            while (!contextEnd.trial().over() || count > 10000){
+                count++;
+                contextEnd = new Context(contextEnd);
 
-                int oneGramHash = evaluatingMove.hashCode();
-                int twoGramHash = 0;
-                int threeGramHash = 0;
-                if (history.size() == 1) {
-                    twoGramHash = history.get(0).hashCode() ^ oneGramHash;
-                } else if (history.size() > 1) {
-                    twoGramHash = history.get(history.size() - 1).hashCode() ^ oneGramHash;
-                    threeGramHash = history.get(history.size() - 2).hashCode() ^ twoGramHash;
-                }
-                Map hmValues = (Map) hashMap.get(oneGramHash);
-                if (hmValues != null) {
-                    double[] result = (double[]) hmValues.get("results");
-                    int visitCount = (int) hmValues.get("visitCount");
-                    if (visitCount > 6) {
-                        scoreGram1 = (result[mover]) / visitCount;
-                    }
-                }
-                if (hashMap.containsKey(twoGramHash)) {
-                    hmValues = (Map) hashMap.get(twoGramHash);
-                    double[] result = (double[]) hmValues.get("results");
-                    int visitCount = (int) hmValues.get("visitCount");
-                    if (visitCount > 6) {
-                        scoreGram2 = (result[mover]) / visitCount;
-                        ++foundGrams;
-                    }
-                }
-                if (hashMap.containsKey(threeGramHash)) {
-                    hmValues = (Map) hashMap.get(threeGramHash);
-                    double[] result = (double[]) hmValues.get("results");
-                    int visitCount = (int) hmValues.get("visitCount");
-                    if (visitCount > 6) {
-                        scoreGram3 = (result[mover]) / visitCount;
-                        ++foundGrams;
-                    }
-                }
-                double moveScore = (scoreGram1 + scoreGram2 + scoreGram3) / foundGrams;
-                if (moveScore > bestScore) {
-                    bestScore = moveScore;
-                    bestMove = evaluatingMove;
-                    numBestFound = 1;
-                } else if (moveScore == bestScore &&
-                        ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
-                    bestMove = evaluatingMove;
-                }
+                FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
 
-            }
-            history.add(bestMove);
-            game.apply(contextEnd, bestMove);
-        }
-        double[] result = AIUtils.utilities(contextEnd);
-        final int playersCount = currentNode.context.game().players().count() + 1;
+                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                Move selectedMove = legalMoves.get(r);
 
-        for (int i = history.size() - 1; i >= 0; i--) {
-            int oneGramHash = history.get(i).hashCode();
-            int twoGramHash = 0;
-            Map hmValues = (Map) hashMap.get(oneGramHash);
-            if (hmValues == null) {
-                Map input = new HashMap();
-                input.put("visitCount", 1);
-                input.put("results", result);
-                hashMap.put(oneGramHash, input);
-            } else {
-//                Map hmValues = (Map) hashMap.get(oneGramHash);
-                int visitCount = (int) hmValues.get("visitCount") + 1;
-                double[] scoredResult = (double[]) hmValues.get("results");
-                for (int player = 0; player < playersCount; player++) {
-                    scoredResult[player] += result[player];
-                }
-                Map input = new HashMap();
-                input.put("visitCount", visitCount);
-                input.put("results", scoredResult);
-                hashMap.put(oneGramHash, input);
+                game.apply(contextEnd, selectedMove);
             }
-            if (i - 1 >= 0) {
-                twoGramHash = history.get(i - 1).hashCode() ^ oneGramHash;
-                if (!hashMap.containsKey(twoGramHash)) {
-                    Map input = new HashMap();
-                    input.put("visitCount", 1);
-                    input.put("results", result);
-                    hashMap.put(twoGramHash, input);
-                } else {
-                    hmValues = (Map) hashMap.get(twoGramHash);
-                    int visitCount = (int) hmValues.get("visitCount") + 1;
-                    double[] scoredResult = (double[]) hmValues.get("results");
-                    for (int player = 0; player < playersCount; player++) {
-                        scoredResult[player] += result[player];
-                    }
-                    Map input = new HashMap();
-                    input.put("visitCount", visitCount);
-                    input.put("results", scoredResult);
-                    hashMap.put(twoGramHash, input);
-                }
-            }
-            if (i - 2 >= 0) {
-                int threeGramHash = history.get(i - 2).hashCode() ^ twoGramHash;
-                if (!hashMap.containsKey(threeGramHash)) {
-                    Map input = new HashMap();
-                    input.put("visitCount", 1);
-                    input.put("results", result);
-                    hashMap.put(threeGramHash, input);
-                } else {
-                    hmValues = (Map) hashMap.get(threeGramHash);
-                    int visitCount = (int) hmValues.get("visitCount") + 1;
-                    double[] scoredResult = (double[]) hmValues.get("results");
-                    for (int player = 0; player < playersCount; player++) {
-                        scoredResult[player] += result[player];
-                    }
-                    Map input = new HashMap();
-                    input.put("visitCount", visitCount);
-                    input.put("results", scoredResult);
-                    hashMap.put(threeGramHash, input);
-                }
-            }
+
+            // This computes utilities for all players at the of the playout,
+            // which will all be values in [-1.0, 1.0]
+            return AIUtils.utilities(contextEnd);
         }
 
-        return AIUtils.utilities(contextEnd);
+        if (strategy.equals("nst")){
+            Context contextEnd = currentNode.context;
+            Game game = contextEnd.game();
+
+            // Get history of moves from playout game.
+            List<Move> history = new ArrayList<>();
+
+            while (!contextEnd.trial().over()){
+                contextEnd = new Context(contextEnd);
+
+                FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
+
+                Move bestMove = null;
+                final double p = ThreadLocalRandom.current().nextDouble(1d);
+                if (p <= eps){   // Explore
+                    final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                    bestMove = legalMoves.get(r);
+                }
+
+                else {          // Exploit
+                    double bestScore = Double.NEGATIVE_INFINITY;
+                    int numBestFound = 0;
+
+                    for (int m = 0; m < legalMoves.size(); m++) {
+                        Move evaluatingMove = legalMoves.get(m);
+                        final int mover = contextEnd.state().mover();
+
+                        double scoreGram1 = Double.MAX_VALUE;
+                        double scoreGram2 = 0.0d;
+                        double scoreGram3 = 0.0d;
+                        int foundGrams = 1;
+
+                        for (int j = 0; j < Gram1.size(); j++) {
+                            if (Gram1.get(j).moves.get(0) == evaluatingMove) {
+                                scoreGram1 = (Gram1.get(j).scoreSums[mover] * Math.pow(decayFactor, playedMoves)) / Gram1.get(j).visitCount;
+                                break;
+                            }
+                        }
+
+                        if (history.size() - 1 >= 0) {
+                            for (int j = 0; j < Gram2.size(); j++) {
+                                if (Gram2.get(j).visitCount > 10 &&
+                                        Gram2.get(j).moves.get(1) == evaluatingMove &&
+                                        Gram2.get(j).moves.get(0) == history.get(history.size() - 1)) {
+                                    scoreGram2 = (Gram1.get(j).scoreSums[mover] * Math.pow(decayFactor, playedMoves)) / Gram2.get(j).visitCount;
+                                    ++foundGrams;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (history.size() - 2 >= 0) {
+                            for (int j = 0; j < Gram3.size(); j++) {
+                                if (Gram3.get(j).visitCount > 10 &&
+                                        Gram3.get(j).moves.get(2) == evaluatingMove &&
+                                        Gram3.get(j).moves.get(1) == history.get(history.size() - 1) &&
+                                        Gram3.get(j).moves.get(0) == history.get(history.size() - 2)) {
+                                    scoreGram3 = (Gram1.get(j).scoreSums[mover] * Math.pow(decayFactor, playedMoves)) / Gram3.get(j).visitCount;
+                                    ++foundGrams;
+                                    break;
+                                }
+                            }
+                        }
+
+                        double moveScore = (scoreGram1 + scoreGram2 + scoreGram3) / foundGrams;
+
+                        if (moveScore > bestScore) {
+                            bestScore = moveScore;
+                            bestMove = evaluatingMove;
+                            numBestFound = 1;
+                        } else if (moveScore == bestScore &&
+                                ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                            bestMove = evaluatingMove;
+                        }
+
+                    }
+                }
+
+                history.add(bestMove);
+                game.apply(contextEnd, bestMove);
+            }
+//            System.out.println("COMPLET PLAYOUT");
+
+            double[] result = AIUtils.utilities(contextEnd);
+            final int playersCount = currentNode.context.game().players().count()+1;
+
+            // Extract the sequences that appeared in the simulated tree.
+            // Traverse history of moves from last to first
+            for(int i = history.size()-1; i >= 0; i--){
+                boolean exists = false;
+                List<Move> movesSequence = new ArrayList<>();
+                movesSequence.add(history.get(i));
+                // Find the played move in the Gram1 list
+                for(int j = 0; j < Gram1.size(); j++){
+                    if (Gram1.get(j).moves == movesSequence){
+                        for (int player = 1; player < playersCount; player++) {
+                            Gram1.get(j).scoreSums[player] += result[player];
+                        }
+                        Gram1.get(j).Visit();
+
+                        exists = true;
+                        break;
+                    }
+                }
+
+                // If the sequence was not stored in the Gram1 list...
+                if(!exists){
+                    // ... add the sequence...
+                    Gram1.add(new Sequence(movesSequence, playersCount));
+                }
+
+                if(i - 1 >= 0) {
+                    movesSequence = new ArrayList<>();
+                    movesSequence.add(history.get(i - 1));
+                    movesSequence.add(history.get(i));
+                    // If the sequence was stored in Gram1 there might be also in Gram2
+                    if(exists){
+                        exists = false;
+                        for (int j = 0; j < Gram2.size(); j++) {
+                            if (Gram2.get(j).moves.get(1) == history.get(i) &&
+                                    Gram2.get(j).moves.get(0) == history.get(i-1)) {
+                                for (int player = 1; player < playersCount; player++) {
+                                    Gram2.get(j).scoreSums[player] += result[player];
+                                }
+                                Gram2.get(j).Visit();
+
+                                exists = true;
+                                break;
+                            }
+                        }
+                    }
+                    // If the sequence was not stored in the Gram2 list...
+                    if (!exists) {
+                        // ... add the sequence.
+                        Gram2.add(new Sequence(movesSequence, playersCount));
+                    }
+
+                    if(i - 2 >= 0){
+                        movesSequence = new ArrayList<>();
+                        movesSequence.add(history.get(i-2));
+                        movesSequence.add(history.get(i-1));
+                        movesSequence.add(history.get(i));
+                        // If the sequence was stored in Gram2 there might be also in Gram3
+                        if (exists){
+                            exists = false;
+                            for(int j = 0; j < Gram3.size(); j++){
+                                if (Gram3.get(j).moves.get(2) == history.get(i) &&
+                                        Gram3.get(j).moves.get(1) == history.get(i-1) &&
+                                        Gram3.get(j).moves.get(0) == history.get(i-2)){
+                                    for (int player = 1; player < playersCount; player++) {
+                                        Gram3.get(j).scoreSums[player] += result[player];
+                                    }
+                                    Gram3.get(j).Visit();
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If the sequence was not stored in the Gram2 list...
+                        if(!exists){
+                            // ... add the sequence...
+                            Gram3.add(new Sequence(movesSequence, playersCount));
+                        }
+                    }
+                }
+            }
+            return AIUtils.utilities(contextEnd);
+        }
+
+        // This is a dummy return.
+        System.out.println("invalid strategy");
+        return AIUtils.utilities(currentNode.context);
     }
-
-    public void DiscountNGrams() {
+    
+    public void DiscountNGrams(){
         float gamma = 0.9f;
-        for (int i = 0; i < Gram1.size(); i++) {
-            for (int player = 0; player < Gram1.get(i).scoreSums.length; player++) {
+        for (int i = 0; i < Gram1.size(); i++){
+            for(int player = 0; player < Gram1.get(i).scoreSums.length; player++){
                 Gram1.get(i).scoreSums[player] = Gram1.get(i).scoreSums[player] * gamma;
             }
         }
-        for (int i = 0; i < Gram2.size(); i++) {
-            for (int player = 0; player < Gram2.get(i).scoreSums.length; player++) {
+        for (int i = 0; i < Gram2.size(); i++){
+            for(int player = 0; player < Gram2.get(i).scoreSums.length; player++){
                 Gram2.get(i).scoreSums[player] = Gram2.get(i).scoreSums[player] * gamma;
-            }
-        }
-        for (int i = 0; i < Gram3.size(); i++) {
-            for (int player = 0; player < Gram3.get(i).scoreSums.length; player++) {
+            }        }
+        for (int i = 0; i < Gram3.size(); i++){
+            for(int player = 0; player < Gram3.get(i).scoreSums.length; player++) {
                 Gram3.get(i).scoreSums[player] = Gram3.get(i).scoreSums[player] * gamma;
             }
         }
@@ -382,7 +438,7 @@ public class MCTS_NST_Tim extends AI {
 
     private void Expand(Node currentNode) {
         Node parentNode = currentNode.parent;
-        if (parentNode != null) {
+        if (parentNode != null){
             parentNode.children.add(currentNode);
         }
     }
@@ -390,7 +446,7 @@ public class MCTS_NST_Tim extends AI {
     // ExampleUCT line 113
     private void Backpropagation(Node currentNode, double[] result) {
         final int playersCount = currentNode.context.game().players().count();
-        while (currentNode != null) {
+        while (currentNode != null){
             currentNode.visitCount += 1;
             for (int player = 0; player <= playersCount; player++) {
                 currentNode.scoreSums[player] += result[player];
@@ -402,7 +458,6 @@ public class MCTS_NST_Tim extends AI {
     /**
      * Final move selection implementing "Max child" strategy
      * where the max child is the child that has the highest value
-     *
      * @param root
      * @return
      */
@@ -425,7 +480,8 @@ public class MCTS_NST_Tim extends AI {
     }
 
     @Override
-    public void initAI(final Game game, final int playerID) {
+    public void initAI(final Game game, final int playerID)
+    {
         this.player = playerID;
         this.analysisReport = null;
 
@@ -443,25 +499,23 @@ public class MCTS_NST_Tim extends AI {
 
 
     public String generateAnalysisReport() {
-        return this.analysisReport == null ? "No analysis generated" : this.analysisReport;
+        return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
     }
 
     //-------------------------------------------------------------------------
 
-    private static class Sequence {
+    private static class Sequence{
         public int visitCount;
         public List<Move> moves;
         public double[] scoreSums;
 
-        public Sequence(List<Move> moves, int players) {
+        public Sequence(List<Move> moves, int players){
             this.moves = moves;
             this.visitCount = 1;
             this.scoreSums = new double[players];
         }
 
-        public void Visit() {
-            ++visitCount;
-        }
+        public void Visit(){ ++visitCount; }
     }
 
     //-------------------------------------------------------------------------
@@ -475,7 +529,7 @@ public class MCTS_NST_Tim extends AI {
         /**
          * Our parent node
          */
-        private final MCTS_NST_Tim.Node parent;
+        private final MCTS_NST.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -500,7 +554,7 @@ public class MCTS_NST_Tim extends AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_NST_Tim.Node> children = new ArrayList<MCTS_NST_Tim.Node>();
+        private final List<MCTS_NST.Node> children = new ArrayList<MCTS_NST.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -514,7 +568,7 @@ public class MCTS_NST_Tim extends AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_NST_Tim.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final MCTS_NST.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;
