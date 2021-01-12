@@ -1,4 +1,4 @@
-package AMSPlayground;
+package legacy.AMSV3;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,6 @@ import java.lang.Math;
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
-import mcts.MCTS_Vanilla;
 import metadata.ai.Ai;
 import metadata.ai.heuristics.Heuristics;
 import metadata.ai.heuristics.terms.HeuristicTerm;
@@ -20,7 +19,6 @@ import metadata.ai.misc.Pair;
 import util.AI;
 import util.Context;
 import util.Move;
-import utils.AIUtils;
 
 /**
  * A simple example implementation of a standard UCT approach.
@@ -29,13 +27,10 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMS_Rollout_BP extends AI {
+public class AMSV3 extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
-    private static int recursiveStackDepth = 0;
-//    private final int maxStackDepth = 50000;
-    private final int maxStackDepth = Integer.MAX_VALUE;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -46,8 +41,6 @@ public class AMS_Rollout_BP extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
-    protected int iterations = 0;
 
     //-------------------------------------------------------------------------
 
@@ -61,8 +54,8 @@ public class AMS_Rollout_BP extends AI {
     /**
      * Constructor
      */
-    public AMS_Rollout_BP() {
-        this.friendlyName = "AMS_Rollout_BP";
+    public AMSV3() {
+        this.friendlyName = "legacy/AMSV3";
     }
 
     //-------------------------------------------------------------------------
@@ -81,240 +74,201 @@ public class AMS_Rollout_BP extends AI {
 
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxIterations : 10000000;
+        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
+        Random rand = new Random();
         int iteration = 0;
-        double discountFactor = 1.0;
+        double discountFactor = 0.9;
 
-        recursiveStackDepth = 0;
-        resetIterations();
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
-        for (int p = 1; p <= game.players().size(); ++p) {
+        for (int p = 1; p < game.players().size(); ++p) {
             if (p != player) {
                 opponents[idx++] = p;
             }
         }
 
+//        System.out.println("opponents " + opponents);
+
         Context copyContext = new Context(context);
         FastArrayList<Move> legalMoves = game.moves(context).moves();
-        double[] values = new double[legalMoves.size()];
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        double [] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
+        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.01F);
 
         //Initialization
-        //Execute each action once and get the result of the action for the current player
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
+            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
             actionCount[i] = 1;
-
-            recursiveStackDepth+=1;
-            double returnedValue = 0;
-            if(recursiveStackDepth < maxStackDepth) {
-                returnedValue = AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime)[this.player];
-            }
-            values[i] = returnedValue;
+//            System.out.println(opponents[0]);
+//            int randomValue = rand.nextInt(11);
+            double returnedValue = -AMS(copyGame, copyContext, maxIterations, maxDepth -1 , opponents[0]);
+            values[i] = reward + discountFactor * returnedValue;
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
         }
         //loop
-        double[] vHatValuesSum = new double[legalMoves.size()];
-        for (int i = 0; i < legalMoves.size(); i++) {
-            vHatValuesSum[i] = values[i];
-        }
-        //Estimation of q value and the UCB value
+        double[] vHatValuesSum = values;
         double[] qValue = new double[legalMoves.size()];
         double[] qValueUCB = new double[legalMoves.size()];
         copyContext = new Context(context);
         int legalMoveSize = iteration;
-        //
-        while (iteration < legalMoveSize + maxIts &&
-                System.currentTimeMillis() < stopTime) {
-            for (int i = 0; i < legalMoves.size(); ++i) {
+        while (iteration < legalMoveSize + maxIterations) {
+            for(int i = 0; i < legalMoves.size(); ++i){
                 copyGame.apply(copyContext, legalMoves.get(i));
-                qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
-                qValueUCB[i] = qValue[i] + Math.sqrt((2 * Math.log(iteration)) / actionCount[i]);
+                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+//                int randomValue = rand.nextInt(11);
+                qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
+//                double test2 = Math.log(iteration);
+//                double test = Math.sqrt((2*Math.log(iteration))/actionCount[i]);
+                qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
                 copyContext = new Context(context);
             }
-            // Find best action and sample this action once more
+
             int bestMoveIndex = maxInteger(qValueUCB);
+//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-
-            recursiveStackDepth+=1;
-            double result = 0;
-            if(recursiveStackDepth < maxStackDepth) {
-                result = AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime)[this.player];
-            }
-
-            vHatValuesSum[bestMoveIndex] += result;
+            double test = -AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0]);
+            vHatValuesSum[bestMoveIndex] += test;
             ++iteration;
         }
 
+//        System.out.println(values);
+
+        // We need to return the value of the highest action one ply deeper
+        // We get the value from the values list
+
+//        int estimatedValue = maxInteger(values);
+
+        // We need to return the estimated V_hat value, following the formula in the paper
+        // This is the EXIT phase of the pseudocode of the paper
+//        double estimatedReturnValue = 0;
+//        for(int i = 0; i < legalMoves.size(); ++i) {
+//            estimatedReturnValue += (actionCount[i]/maxIterations) * values[i];
+//        }
+
+
+//        FastArrayList<Move> legalMoves = game.moves(context).moves();
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
         copyContext = new Context(context);
 
-        //Get final q values to determine action to take
-        for (int i = 0; i < legalMoves.size(); ++i) {
+        for(int i = 0; i < legalMoves.size(); ++i){
+//            int randomValue = rand.nextInt(11);
             copyGame.apply(copyContext, legalMoves.get(i));
+            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
-            qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
+            qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
+//            qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
             qValueUCB[i] = qValue[i] * actionCount[i] / iteration;
             copyContext = new Context(context);
         }
-        updateIterations(iteration);
+
         int bestMoveIndex = maxInteger(qValueUCB);
+//        int bestMove = maxInteger(values);
 
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
 
-    public double[] AMS(Game game, Context context, int maxIterations, int depth, int player, long stopTime) {
-        Context copyContext = new Context(context);
+    public double AMS(Game game, Context context, int maxIterations, int depth, int player) {
         final Node root = new Node(null, null, context);
         Node current = root;
-        //Mover equals who's turn it is in tree
-        final int mover = current.context.state().mover();
-        if (depth == 0 || current.context.trial().over()) {
-            double[] result = PlayOut(current);
-            return result;
-        }
-
+        Random rand = new Random();
+        if (depth == 0 || current.context.trial().over()) return 0;
+//        System.out.println(game.players().size());
+//        System.out.println(game.players().players());
         int iteration = 0;
-        double discountFactor = 1.0;
+        double discountFactor = 0.9;
 
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
-        for (int p = 1; p <= game.players().size(); ++p) {
+        for (int p = 1; p < game.players().size(); ++p) {
             if (p != player) {
                 opponents[idx++] = p;
             }
         }
 
+//        System.out.println("opponents " + opponents);
 
-        copyContext = new Context(context);
+        Context copyContext = new Context(context);
         FastArrayList<Move> legalMoves = game.moves(context).moves();
-        double[][] values = new double[game.players().size()][legalMoves.size()];
+//        legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        double [] values = new double[legalMoves.size()];
         int[] actionCount = new int[legalMoves.size()];
         Game copyGame = game;
 
+        float heuristicScore = this.heuristicValueFunction.computeValue(context, this.player, 0.01F);
 
-        //Initialization Get first Estimation
+        //Initialization
         for (int i = 0; i < legalMoves.size(); ++i) {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
+//            System.out.println(opponents[0]);
+//            int randomValue = rand.nextInt(11);
+            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
-            recursiveStackDepth+=1;
-            double[] returnedValues = new double[game.players().size()];
-            if(recursiveStackDepth < maxStackDepth) {
-                returnedValues = AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
-            }
-
-            values = Backpropagation(current, returnedValues, values, i);
+            double returnedValue = -AMS(copyGame, copyContext, maxIterations, depth -1 , opponents[0]);
+            values[i] = reward + discountFactor * returnedValue;
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
         }
-        //To get all the values for all players, to backpropagate properly, it becomes a matrix
-        double[][] vHatValuesSum = new double[game.players().size()][legalMoves.size()];
-        for (int i = 0; i < legalMoves.size(); i++) {
-            for (int p = 0; p < game.players().size(); p++) {
-                vHatValuesSum[p][i] = values[p][i];
-            }
-
-        }
-        double[][] qValue = new double[game.players().size()][legalMoves.size()];
-        double[][] qValueUCB = new double[game.players().size()][legalMoves.size()];
+        //loop
+        double[] vHatValuesSum = values;
+        double[] qValue = new double[legalMoves.size()];
+        double[] qValueUCB = new double[legalMoves.size()];
         copyContext = new Context(context);
         int legalMoveSize = iteration;
-        // Get Q value plus UCB value
-        while (iteration < legalMoveSize + maxIterations &&
-                System.currentTimeMillis() < stopTime) {
-            for (int i = 0; i < legalMoves.size(); ++i) {
+        while (iteration < legalMoveSize + maxIterations) {
+            for(int i = 0; i < legalMoves.size(); ++i){
                 copyGame.apply(copyContext, legalMoves.get(i));
-                for (int p = 0; p < game.players().size(); p++) {
-                    // Reward equals 0
-                    qValue[p][i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[p][i];
-                    qValueUCB[p][i] = qValue[p][i] + Math.sqrt((2 * Math.log(iteration)) / actionCount[i]);
-                }
-//                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
-
+                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
+                qValue[i] = reward + discountFactor / actionCount[i] * vHatValuesSum[i];
+                qValueUCB[i] = qValue[i] + Math.sqrt((2*Math.log(iteration))/actionCount[i]);
                 copyContext = new Context(context);
             }
-            // Get best action to perform
-            int bestMoveIndex = maxInteger(qValueUCB[mover]);
+
+            int bestMoveIndex = maxInteger(qValueUCB);
+//            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-
-            recursiveStackDepth+=1;
-            double[] returnedValues = new double[game.players().size()];
-            if(recursiveStackDepth < maxStackDepth) {
-                returnedValues = AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
-            }
-
-            vHatValuesSum = Backpropagation(current, returnedValues, vHatValuesSum, bestMoveIndex);
+            vHatValuesSum[bestMoveIndex] += -AMS(game, copyContext, maxIterations, depth - 1, opponents[0]);
             ++iteration;
             copyContext = new Context(context);
         }
 
-        //Calculate weighted averages to return
-        double[] estimatedReturnValue = new double[game.players().size()];
-        for (int i = 0; i < legalMoves.size(); ++i) {
-            for (int p = 0; p < game.players().size(); p++) {
-                estimatedReturnValue[p] += ((double) actionCount[i] / (iteration)) * qValue[p][i];
-            }
+//        System.out.println(values);
+
+        // We need to return the value of the highest action one ply deeper
+        // We get the value from the values list
+
+//        int estimatedValue = maxInteger(values);
+
+        // We need to return the estimated V_hat value, following the formula in the paper
+        // This is the EXIT phase of the pseudocode of the paper
+        double estimatedReturnValue = 0;
+        for(int i = 0; i < legalMoves.size(); ++i) {
+            estimatedReturnValue += ((double) actionCount[i]/(iteration)) * values[i];
         }
-        updateIterations(iteration);
+
         return estimatedReturnValue;
     }
 
-    // Find highest number
-    public int maxInteger(double[] values) {
+    public int maxInteger(double[] values){
         double max_value = Integer.MIN_VALUE;
         int bestInt = 0;
-        for (int j = 0; j < values.length; ++j) {
-            if (values[j] > max_value) {
+        for(int j= 0; j < values.length; ++j){
+            if (values[j] > max_value){
                 max_value = values[j];
                 bestInt = j;
             }
         }
         return bestInt;
-    }
-
-    // Do MCTS Playout/Rollout, same as MCTS_Vanilla
-    private double[] PlayOut(Node currentNode) {
-        Context contextEnd = currentNode.context;
-        Game game = contextEnd.game();
-        if (!contextEnd.trial().over()) {
-            // Run a playout if we don't already have a terminal game state in node
-            contextEnd = new Context(contextEnd);
-            game.playout
-                    (
-                            contextEnd,
-                            null,
-                            -1.0,
-                            null,
-                            null,
-                            0,
-                            -1,
-                            0.f,
-                            ThreadLocalRandom.current()
-                    );
-        }
-        // This computes utilities for all players at the of the playout,
-        // which will all be values in [-1.0, 1.0]
-        return AIUtils.utilities(contextEnd);
-    }
-
-    //Backpropagate results, similar to MCTS_Vanilla backpropagation
-    private double[][] Backpropagation(Node currentNode, double[] result, double[][] values, int action) {
-
-        final int playersCount = currentNode.context.game().players().count();
-        double[][] results = values;
-        for (int player = 0; player <= playersCount; player++) {
-            results[player][action] += result[player];
-        }
-        return results;
     }
 
 
@@ -408,7 +362,6 @@ public class AMS_Rollout_BP extends AI {
             }
         }
 
-        assert bestChild != null;
         return bestChild.moveFromParent;
     }
 
@@ -420,7 +373,7 @@ public class AMS_Rollout_BP extends AI {
             if (aiMetadata != null && aiMetadata.heuristics() != null) {
                 this.heuristicValueFunction = aiMetadata.heuristics();
             } else {
-                this.heuristicValueFunction = new Heuristics(new HeuristicTerm[]{new Material((HeuristicTransformation) null, 1.0F, (Pair[]) null), new MobilitySimple((HeuristicTransformation) null, 0.001F)});
+                this.heuristicValueFunction = new Heuristics(new HeuristicTerm[]{new Material((HeuristicTransformation)null, 1.0F, (Pair[])null), new MobilitySimple((HeuristicTransformation)null, 0.001F)});
             }
         }
 
@@ -448,18 +401,6 @@ public class AMS_Rollout_BP extends AI {
             return false;
 
         return true;
-    }
-
-    public int getIterations(){
-        return this.iterations;
-    }
-
-    protected void updateIterations(int iterations){
-        this.iterations += iterations;
-    }
-
-    protected void resetIterations(){
-        this.iterations = 0;
     }
 
     //-------------------------------------------------------------------------
@@ -532,5 +473,4 @@ public class AMS_Rollout_BP extends AI {
     //-------------------------------------------------------------------------
 
 }
-
 

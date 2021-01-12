@@ -1,6 +1,5 @@
 package mcts;
 
-import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -12,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Vanilla extends Group12AI {
+public class MCTS_Various_Enhancements extends AI {
 
     //-------------------------------------------------------------------------
 
@@ -20,18 +19,19 @@ public class MCTS_Vanilla extends Group12AI {
     protected int player = -1;
     protected String analysisReport;
     protected int lastNumPlayoutActions;
-    public int iterations = 0;
-    protected double C;
+
+
+    protected String selectionStrategy = "UCB1-Tuned"; // UCB1-Tuned, UCT
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Vanilla(double C)
+    public MCTS_Various_Enhancements()
     {
-        this.friendlyName = "MCTS v2";
-        this.C = C;
+        this.friendlyName = "MCTS Playground";
+        this.analysisReport = null;
     }
 
     //-------------------------------------------------------------------------
@@ -51,7 +51,6 @@ public class MCTS_Vanilla extends Group12AI {
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
         int numIterations = 0;
-        resetIterations();
         // keep searching until running out of time (ExampleUCT)
         while(numIterations < maxIts && 					// Respect iteration limit
                 System.currentTimeMillis() < stopTime && 	// Respect time limit
@@ -65,42 +64,9 @@ public class MCTS_Vanilla extends Group12AI {
             numIterations++;
         }
         Move bestMove = finalMoveSelection(root);
-        updateIterations(numIterations);
+
         // Return best move to play from root
         return bestMove;
-    }
-
-    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth, int startDepth) {
-        // NOT CURRENTLY SUPPORTED - STILL TRYING TO FIGURE OUT HOW MAXN SEARCH TREES WOULD WORK WITH LUDII
-        // initialize Monte-Carlo Tree
-        Node root = new Node(null, null, context);
-
-        // calculate time to stop search in milliseconds
-        final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
-        final int numPlayers = game.players().count();
-
-        int numIterations = 0;
-        // keep searching until running out of time (ExampleUCT)
-        while(numIterations < maxIts && 					// Respect iteration limit
-                System.currentTimeMillis() < stopTime && 	// Respect time limit
-                !wantsInterrupt								// Respect GUI user clicking the pause button
-        ){
-            Node currentNode = RandomSelection(root);
-            // A simulated game is played
-            double[] result = PlayOut(currentNode);
-            // A node is added
-            Expand(currentNode);
-            // The result is backpropagated
-            Backpropagation(currentNode, result);
-            numIterations++;
-        }
-        Move bestMove = finalMoveSelection(root);
-        System.out.println("timeout");
-
-        // Return legacy.random move
-        return bestMove;
-
     }
 
     private Node Selection(Node currentNode){
@@ -145,12 +111,13 @@ public class MCTS_Vanilla extends Group12AI {
     }
 
     private Node BestChild(Node currentNode){
+        final double C = 0.4f;
 
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
 
         final double parentLog = Math.log(currentNode.visitCount);
-        final double twoParentLog = 2.0 * Math.log(Math.max(1, currentNode.visitCount));
+//        final double twoParentLog = 2.0 * Math.log(Math.max(1, currentNode.visitCount));
 
         final int mover = currentNode.context.state().mover();
 
@@ -158,7 +125,10 @@ public class MCTS_Vanilla extends Group12AI {
             final Node child = currentNode.children.get(i);
 //            final double childValue = child.scoreSums[player] / child.visitCount;
             final double childValue = child.scoreSums[mover] / child.visitCount;
-            final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
+            final double variance = selectionStrategy.equals("UCT") ? childValue : childValue * (1-childValue);
+            final double logTerm = selectionStrategy.equals("UCT") ? C * Math.sqrt(parentLog / child.visitCount) :
+                    Math.sqrt(parentLog / child.visitCount * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
+            final double ucbValue =  childValue + logTerm;
 
 //            final double exploit = child.scoreSums[mover] / child.visitCount;
 //            final double explore = Math.sqrt(twoParentLog / child.visitCount);
@@ -195,7 +165,7 @@ public class MCTS_Vanilla extends Group12AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new MCTS_Vanilla.Node(currentNode, move, context);
+                currentNode = new MCTS_Various_Enhancements.Node(currentNode, move, context);
             }
             else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
@@ -294,17 +264,6 @@ public class MCTS_Vanilla extends Group12AI {
         return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
     }
 
-    public int getIterations(){
-        return this.iterations;
-    }
-
-    protected void updateIterations(int iterations){
-        this.iterations += iterations;
-    }
-
-    protected void resetIterations(){
-        this.iterations = 0;
-    }
 
     public String generateAnalysisReport() {
         return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
@@ -326,7 +285,7 @@ public class MCTS_Vanilla extends Group12AI {
         /**
          * Our parent node
          */
-        private final MCTS_Vanilla.Node parent;
+        private final MCTS_Various_Enhancements.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -351,7 +310,7 @@ public class MCTS_Vanilla extends Group12AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_Vanilla.Node> children = new ArrayList<MCTS_Vanilla.Node>();
+        private final List<MCTS_Various_Enhancements.Node> children = new ArrayList<MCTS_Various_Enhancements.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -365,7 +324,7 @@ public class MCTS_Vanilla extends Group12AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_Vanilla.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final MCTS_Various_Enhancements.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;

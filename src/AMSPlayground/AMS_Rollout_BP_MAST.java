@@ -1,15 +1,9 @@
 package AMSPlayground;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-import java.lang.Math;
-
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
-import mcts.MCTS_Vanilla;
+import mcts.MCTS_MAST;
 import metadata.ai.Ai;
 import metadata.ai.heuristics.Heuristics;
 import metadata.ai.heuristics.terms.HeuristicTerm;
@@ -22,6 +16,11 @@ import util.Context;
 import util.Move;
 import utils.AIUtils;
 
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * A simple example implementation of a standard UCT approach.
  * <p>
@@ -29,7 +28,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMS_Rollout_BP extends AI {
+public class AMS_Rollout_BP_MAST extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
@@ -46,8 +45,12 @@ public class AMS_Rollout_BP extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
     protected int iterations = 0;
+    /**
+     * MAST variables
+     */
+    protected Hashtable<Integer, Gram> grams;
+    protected final double eps = 0.1;
 
     //-------------------------------------------------------------------------
 
@@ -61,8 +64,8 @@ public class AMS_Rollout_BP extends AI {
     /**
      * Constructor
      */
-    public AMS_Rollout_BP() {
-        this.friendlyName = "AMS_Rollout_BP";
+    public AMS_Rollout_BP_MAST() {
+        this.friendlyName = "AMS_Rollout_BP MAST";
     }
 
     //-------------------------------------------------------------------------
@@ -78,6 +81,7 @@ public class AMS_Rollout_BP extends AI {
             ) {
         // Start out by creating a new root node (no tree reuse in this example)
         final Node root = new Node(null, null, context);
+        this.grams = new Hashtable<>();
 
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
@@ -162,9 +166,9 @@ public class AMS_Rollout_BP extends AI {
             qValueUCB[i] = qValue[i] * actionCount[i] / iteration;
             copyContext = new Context(context);
         }
-        updateIterations(iteration);
-        int bestMoveIndex = maxInteger(qValueUCB);
 
+        int bestMoveIndex = maxInteger(qValueUCB);
+        updateIterations(iteration);
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
@@ -228,7 +232,7 @@ public class AMS_Rollout_BP extends AI {
         copyContext = new Context(context);
         int legalMoveSize = iteration;
         // Get Q value plus UCB value
-        while (iteration < legalMoveSize + maxIterations &&
+        while (iteration < legalMoveSize + 50 &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));
@@ -281,29 +285,84 @@ public class AMS_Rollout_BP extends AI {
         return bestInt;
     }
 
+    private FastArrayList<Move> getLegalMoves(Game game, Context context){
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+
+        // If we're playing a simultaneous-move game, some of the legal moves may be
+        // for different players. Extract only the ones that we can choose.
+        if (!game.isAlternatingMoveGame())
+            legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        return legalMoves;
+    }
+
     // Do MCTS Playout/Rollout, same as MCTS_Vanilla
     private double[] PlayOut(Node currentNode) {
         Context contextEnd = currentNode.context;
         Game game = contextEnd.game();
-        if (!contextEnd.trial().over()) {
-            // Run a playout if we don't already have a terminal game state in node
+
+        List<Move> history = new ArrayList<>();
+
+        while (!contextEnd.trial().over()){
             contextEnd = new Context(contextEnd);
-            game.playout
-                    (
-                            contextEnd,
-                            null,
-                            -1.0,
-                            null,
-                            null,
-                            0,
-                            -1,
-                            0.f,
-                            ThreadLocalRandom.current()
-                    );
+
+            FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
+
+            Move bestMove = null;
+            final double p = ThreadLocalRandom.current().nextDouble(1d);
+            if (p <= eps){   // Explore
+                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                bestMove = legalMoves.get(r);
+            }
+
+            else {          // Exploit
+                double bestScore = Double.NEGATIVE_INFINITY;
+                int numBestFound = 0;
+
+                for (int m = 0; m < legalMoves.size(); m++) {
+                    Move evaluatingMove = legalMoves.get(m);
+                    final int mover = contextEnd.state().mover();
+
+
+                    double moveScore = Double.MAX_VALUE;
+                    Gram currentGram = grams.get(evaluatingMove.hashCode());
+
+                    if(currentGram != null){
+                        moveScore = currentGram.MoverScoreSums(mover);
+                    }
+
+                    if (moveScore > bestScore) {
+                        bestScore = moveScore;
+                        bestMove = evaluatingMove;
+                        numBestFound = 1;
+                    } else if (moveScore == bestScore &&
+                            ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                        bestMove = evaluatingMove;
+                    }
+                }
+            }
+
+            history.add(bestMove);
+            game.apply(contextEnd, bestMove);
         }
+
+        double[] results = AIUtils.utilities(contextEnd);
+
+        for (int i = 0; i < history.size(); ++i){
+            Gram currentGram = this.grams.get(history.get(i).hashCode());
+            if (currentGram == null){
+                Move currentMove = history.get(i);
+                Gram newGram = new Gram(results);
+                grams.put(currentMove.hashCode(), newGram);
+            }
+
+            else {
+                currentGram.UpdateScoreSums(results);
+            }
+        }
+
         // This computes utilities for all players at the of the playout,
         // which will all be values in [-1.0, 1.0]
-        return AIUtils.utilities(contextEnd);
+        return results;
     }
 
     //Backpropagate results, similar to MCTS_Vanilla backpropagation
@@ -437,6 +496,8 @@ public class AMS_Rollout_BP extends AI {
         this.lastSearchedRootContext = null;
         this.lastReturnedMove = null;
         this.numPlayersInGame = game.players().count();
+
+        this.grams = new Hashtable<>();
     }
 
     @Override
@@ -460,6 +521,29 @@ public class AMS_Rollout_BP extends AI {
 
     protected void resetIterations(){
         this.iterations = 0;
+    }
+
+
+    private static class Gram{
+        private int visitCount;
+
+        private double[] scoreSums;
+
+        public Gram(final double[] scoreSums){
+            this.visitCount = 1;
+            this.scoreSums = scoreSums;
+        }
+
+        public double MoverScoreSums(int mover){
+            return scoreSums[mover] / visitCount;
+        }
+
+        public void UpdateScoreSums(final double[] scoreSums){
+            visitCount += 1;
+            for (int i = 0; i < scoreSums.length; ++i){
+                this.scoreSums[i] += scoreSums[i];
+            }
+        }
     }
 
     //-------------------------------------------------------------------------

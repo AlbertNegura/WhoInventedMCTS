@@ -29,12 +29,12 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMS_Rollout_BP extends AI {
+public class AMS_Tim extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
     private static int recursiveStackDepth = 0;
-//    private final int maxStackDepth = 50000;
+    //    private final int maxStackDepth = 50000;
     private final int maxStackDepth = Integer.MAX_VALUE;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
@@ -61,7 +61,7 @@ public class AMS_Rollout_BP extends AI {
     /**
      * Constructor
      */
-    public AMS_Rollout_BP() {
+    public AMS_Tim() {
         this.friendlyName = "AMS_Rollout_BP";
     }
 
@@ -228,7 +228,7 @@ public class AMS_Rollout_BP extends AI {
         copyContext = new Context(context);
         int legalMoveSize = iteration;
         // Get Q value plus UCB value
-        while (iteration < legalMoveSize + maxIterations &&
+        while (iteration < legalMoveSize + 50 &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));

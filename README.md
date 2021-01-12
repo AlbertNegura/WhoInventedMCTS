@@ -68,7 +68,7 @@ your project.
 	4. `public void closeAI()`. This method can be used to perform any cleanup of resources
 	when a game has been finished.
 For a simple example class that extends this abstract class, see the 
-[Example Random AI](src/random/RandomAI.java).
+[Example Random AI](src/legacy/random/RandomAI.java).
 5. Export your project to a new JAR file.
 
 ### Loading AI in the Ludii Application
@@ -101,8 +101,8 @@ wish to try loading agents from the modified JAR file.
 
 ## Implemented Agents
 
-- [AMS](src/ams/AMS.java).
-- [Random AI](src/random/RandomAI.java).
+- [AMS](src/legacy/ams/AMS.java).
+- [Random AI](src/legacy/random/RandomAI.java).
 - [Example UCT](src/mcts/ExampleUCT.java) (only supports deterministic, alternating-move games).
 - [Example Decoupled UCT](src/mcts/ExampleDUCT.java) (only supporst deterministic, simultaneous-move games).
 

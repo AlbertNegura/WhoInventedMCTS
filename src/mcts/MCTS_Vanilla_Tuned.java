@@ -1,6 +1,5 @@
 package mcts;
 
-import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -12,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Vanilla extends Group12AI {
+public class MCTS_Vanilla_Tuned extends AI {
 
     //-------------------------------------------------------------------------
 
@@ -20,18 +19,16 @@ public class MCTS_Vanilla extends Group12AI {
     protected int player = -1;
     protected String analysisReport;
     protected int lastNumPlayoutActions;
-    public int iterations = 0;
-    protected double C;
-
+    protected int iterations = 0;
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Vanilla(double C)
+    public MCTS_Vanilla_Tuned()
     {
-        this.friendlyName = "MCTS v2";
-        this.C = C;
+        this.friendlyName = "MCTS";
+        this.analysisReport = null;
     }
 
     //-------------------------------------------------------------------------
@@ -158,7 +155,8 @@ public class MCTS_Vanilla extends Group12AI {
             final Node child = currentNode.children.get(i);
 //            final double childValue = child.scoreSums[player] / child.visitCount;
             final double childValue = child.scoreSums[mover] / child.visitCount;
-            final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
+            final double variance = childValue * (1-childValue);
+            final double ucbValue = childValue + Math.sqrt(parentLog / child.visitCount * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
 
 //            final double exploit = child.scoreSums[mover] / child.visitCount;
 //            final double explore = Math.sqrt(twoParentLog / child.visitCount);
@@ -195,7 +193,7 @@ public class MCTS_Vanilla extends Group12AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new MCTS_Vanilla.Node(currentNode, move, context);
+                currentNode = new MCTS_Vanilla_Tuned.Node(currentNode, move, context);
             }
             else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
@@ -326,7 +324,7 @@ public class MCTS_Vanilla extends Group12AI {
         /**
          * Our parent node
          */
-        private final MCTS_Vanilla.Node parent;
+        private final MCTS_Vanilla_Tuned.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -351,7 +349,7 @@ public class MCTS_Vanilla extends Group12AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_Vanilla.Node> children = new ArrayList<MCTS_Vanilla.Node>();
+        private final List<MCTS_Vanilla_Tuned.Node> children = new ArrayList<MCTS_Vanilla_Tuned.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -365,7 +363,7 @@ public class MCTS_Vanilla extends Group12AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_Vanilla.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final MCTS_Vanilla_Tuned.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;

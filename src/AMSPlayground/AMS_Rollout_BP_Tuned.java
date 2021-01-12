@@ -1,15 +1,8 @@
 package AMSPlayground;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-import java.lang.Math;
-
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
-import mcts.MCTS_Vanilla;
 import metadata.ai.Ai;
 import metadata.ai.heuristics.Heuristics;
 import metadata.ai.heuristics.terms.HeuristicTerm;
@@ -22,6 +15,10 @@ import util.Context;
 import util.Move;
 import utils.AIUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * A simple example implementation of a standard UCT approach.
  * <p>
@@ -29,7 +26,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMS_Rollout_BP extends AI {
+public class AMS_Rollout_BP_Tuned extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
@@ -46,9 +43,7 @@ public class AMS_Rollout_BP extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
     protected int iterations = 0;
-
     //-------------------------------------------------------------------------
 
     /**
@@ -61,7 +56,7 @@ public class AMS_Rollout_BP extends AI {
     /**
      * Constructor
      */
-    public AMS_Rollout_BP() {
+    public AMS_Rollout_BP_Tuned() {
         this.friendlyName = "AMS_Rollout_BP";
     }
 
@@ -134,7 +129,9 @@ public class AMS_Rollout_BP extends AI {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));
                 qValue[i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[i];
-                qValueUCB[i] = qValue[i] + Math.sqrt((2 * Math.log(iteration)) / actionCount[i]);
+                double var = vHatValuesSum[i] / actionCount[i];
+                double variance = var * (1-var);
+                qValueUCB[i] = qValue[i] + Math.sqrt((Math.log(iteration)) / actionCount[i] * Math.min(0.25, variance + Math.sqrt(2 * Math.log(iteration)) / actionCount[i]));
                 copyContext = new Context(context);
             }
             // Find best action and sample this action once more
@@ -162,9 +159,9 @@ public class AMS_Rollout_BP extends AI {
             qValueUCB[i] = qValue[i] * actionCount[i] / iteration;
             copyContext = new Context(context);
         }
-        updateIterations(iteration);
-        int bestMoveIndex = maxInteger(qValueUCB);
 
+        int bestMoveIndex = maxInteger(qValueUCB);
+        updateIterations(iteration);
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
@@ -235,7 +232,9 @@ public class AMS_Rollout_BP extends AI {
                 for (int p = 0; p < game.players().size(); p++) {
                     // Reward equals 0
                     qValue[p][i] = 0 + discountFactor / actionCount[i] * vHatValuesSum[p][i];
-                    qValueUCB[p][i] = qValue[p][i] + Math.sqrt((2 * Math.log(iteration)) / actionCount[i]);
+                    double var = vHatValuesSum[p][i] / actionCount[i];
+                    double variance = var * (1-var);
+                    qValueUCB[p][i] = qValue[p][i] + Math.sqrt((Math.log(iteration)) / actionCount[i] * Math.min(0.25, variance + Math.sqrt(2 * Math.log(iteration)) / actionCount[i]));
                 }
 //                float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
 
@@ -264,7 +263,7 @@ public class AMS_Rollout_BP extends AI {
                 estimatedReturnValue[p] += ((double) actionCount[i] / (iteration)) * qValue[p][i];
             }
         }
-        updateIterations(iteration);
+        updateIterations(iterations);
         return estimatedReturnValue;
     }
 
@@ -461,7 +460,6 @@ public class AMS_Rollout_BP extends AI {
     protected void resetIterations(){
         this.iterations = 0;
     }
-
     //-------------------------------------------------------------------------
 
     /**

@@ -1,20 +1,18 @@
 package mcts;
 
 import game.Game;
-import game.rules.play.moves.nonDecision.effect.requirement.Do;
 import main.collections.FastArrayList;
 import util.AI;
 import util.Context;
 import util.Move;
 import utils.AIUtils;
 
-import javax.swing.text.AsyncBoxView;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_NSTv2 extends AI {
+public class MCTS_MAST extends AI {
 
     //-------------------------------------------------------------------------
 
@@ -23,21 +21,17 @@ public class MCTS_NSTv2 extends AI {
     protected String analysisReport;
 
     protected Hashtable<Integer, Gram> grams;
-
-    protected final int MAX_GRAMS = 3;
-    protected final int MIN_VISITS = 7;
     protected final double eps = 0.1;
     protected int iterations = 0;
     protected double C;
-
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_NSTv2(double C)
+    public MCTS_MAST(double C)
     {
-        this.friendlyName = "MCTS NST v2";
+        this.friendlyName = "MCTS MAST";
         this.analysisReport = null;
         this.C = C;
     }
@@ -73,13 +67,16 @@ public class MCTS_NSTv2 extends AI {
             Backpropagation(selectedNode, result);
             numIterations++;
         }
+
         Move bestMove = finalMoveSelection(root);
         updateIterations(numIterations);
         // Return best move to play from root
         return bestMove;
     }
 
+
     private Node Selection(Node currentNode){
+//        Node current = currentNode;
         // Traverse tree
         List<Move> history = new ArrayList<>();
         while (true) {
@@ -103,6 +100,10 @@ public class MCTS_NSTv2 extends AI {
         // If there is any unexpanded move from the current node...
         if (!currentNode.unexpandedMoves.isEmpty())
         {
+            // ... randomly select an unexpanded move
+//            final Move move = currentNode.unexpandedMoves.remove(
+//                    ThreadLocalRandom.current().nextInt(currentNode.unexpandedMoves.size()));
+
             // create a copy of context
             final Context context = new Context(currentNode.context);
 
@@ -111,7 +112,7 @@ public class MCTS_NSTv2 extends AI {
             int bestMoveIndex = -1;
             final double p = ThreadLocalRandom.current().nextDouble(1d);
             if (p <= eps){   // Explore
-                bestMoveIndex = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());
+                bestMoveIndex = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());;
             }
 
             else {          // Exploit
@@ -122,25 +123,13 @@ public class MCTS_NSTv2 extends AI {
                     Move evaluatingMove = unexpandedMoves.get(m);
                     final int mover = context.state().mover();
 
-                    ArrayList<Double> gramScoreSums = new ArrayList<>();
 
                     Gram currentGram = grams.get(evaluatingMove.hashCode());
+                    double moveScore = Double.MAX_VALUE;
 
                     if(currentGram != null){
-                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
+                        moveScore = currentGram.MoverScoreSums(mover);
                     }
-
-                    else{
-                        gramScoreSums.add(Double.MAX_VALUE);
-                    }
-
-                    double moveScore = 0;
-
-                    for (int i = 0; i < gramScoreSums.size(); i++){
-                        moveScore += gramScoreSums.get(i);
-                    }
-
-                    moveScore = moveScore / gramScoreSums.size();
 
                     if (moveScore > bestScore) {
                         bestScore = moveScore;
@@ -226,25 +215,13 @@ public class MCTS_NSTv2 extends AI {
                     Move evaluatingMove = legalMoves.get(m);
                     final int mover = contextEnd.state().mover();
 
-                    ArrayList<Double> gramScoreSums = new ArrayList<>();
 
+                    double moveScore = Double.MAX_VALUE;
                     Gram currentGram = grams.get(evaluatingMove.hashCode());
 
                     if(currentGram != null){
-                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
+                        moveScore = currentGram.MoverScoreSums(mover);
                     }
-
-                    else{
-                        gramScoreSums.add(Double.MAX_VALUE);
-                    }
-
-                    double moveScore = 0;
-
-                    for (int i = 0; i < gramScoreSums.size(); i++){
-                        moveScore += gramScoreSums.get(i);
-                    }
-
-                    moveScore = moveScore / gramScoreSums.size();
 
                     if (moveScore > bestScore) {
                         bestScore = moveScore;
@@ -266,60 +243,19 @@ public class MCTS_NSTv2 extends AI {
         for (int i = 0; i < history.size(); ++i){
             Gram currentGram = this.grams.get(history.get(i).hashCode());
             if (currentGram == null){
-                addGram(null, history, i, 1, results);
+                Move currentMove = history.get(i);
+                Gram newGram = new Gram(results);
+                grams.put(currentMove.hashCode(), newGram);
             }
 
             else {
-                updateGramsScoreSums(currentGram, history, i, 1, results);
+                currentGram.UpdateScoreSums(results);
             }
         }
 
         // This computes utilities for all players at the of the playout,
         // which will all be values in [-1.0, 1.0]
         return results;
-    }
-
-    private Gram addGram(Gram nextGram, List<Move> history, int currentMove, int gram, double[] results){
-        Gram newGram = new Gram(history.get(currentMove), nextGram , results);
-
-        if (nextGram == null){
-            grams.put(history.get(currentMove).hashCode(), newGram);
-        }
-        else {
-            nextGram.previousGram.put(history.get(currentMove).hashCode(), newGram);
-        }
-
-        if (currentMove > 0 && gram <= MAX_GRAMS){
-            addGram(newGram, history, currentMove-1, ++gram, results);
-        }
-
-        return newGram;
-    }
-
-    private void updateGramsScoreSums(Gram currentGram, List<Move> history, int currentMove, int gram, double[] results){
-        currentGram.UpdateScoreSums(results);
-
-        if (currentMove > 0 && gram <= MAX_GRAMS){
-            Gram previousGram = currentGram.previousGram.get(history.get(currentMove-1).hashCode());
-            if(previousGram == null){
-                addGram(currentGram, history, --currentMove, ++gram, results);
-            }
-            else {
-                updateGramsScoreSums(previousGram, history, --currentMove, ++gram, results);
-            }
-        }
-    }
-
-    private ArrayList<Double> getGramsScoreSums(Gram currentGram, ArrayList<Double> gramScoreSums, List<Move> history, int currentMove, int gram, int mover){
-        ArrayList<Double> gramScores = gramScoreSums;
-        gramScores.add(currentGram.MoverScoreSums(mover));
-        if (currentMove > 0 && gram <= MAX_GRAMS){
-            Gram previousGram = currentGram.previousGram.get(history.get(currentMove-1).hashCode());
-            if (previousGram != null && previousGram.visitCount >= MIN_VISITS){
-                gramScores = getGramsScoreSums(previousGram, gramScores, history, currentMove-1, gram+1, mover);
-            }
-        }
-        return gramScores;
     }
 
     // ExampleUCT line 113
@@ -383,6 +319,7 @@ public class MCTS_NSTv2 extends AI {
         this.iterations = 0;
     }
 
+
     public String generateAnalysisReport() {
         return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
     }
@@ -390,20 +327,13 @@ public class MCTS_NSTv2 extends AI {
     //-------------------------------------------------------------------------
 
     private static class Gram{
-        private final Hashtable<Integer, Gram> previousGram;
-
         private int visitCount;
 
         private double[] scoreSums;
 
-        public Gram(final Move move, final Gram nextGram, final double[] scoreSums){
-            this.previousGram = new Hashtable<>();
+        public Gram(final double[] scoreSums){
             this.visitCount = 1;
             this.scoreSums = scoreSums;
-
-            if (nextGram != null){
-                nextGram.previousGram.put(move.hashCode(), this);
-            }
         }
 
         public double MoverScoreSums(int mover){
@@ -427,7 +357,7 @@ public class MCTS_NSTv2 extends AI {
         /**
          * Our parent node
          */
-        private final MCTS_NSTv2.Node parent;
+        private final MCTS_MAST.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -452,7 +382,7 @@ public class MCTS_NSTv2 extends AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_NSTv2.Node> children = new ArrayList<MCTS_NSTv2.Node>();
+        private final List<MCTS_MAST.Node> children = new ArrayList<MCTS_MAST.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -466,7 +396,7 @@ public class MCTS_NSTv2 extends AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_NSTv2.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final MCTS_MAST.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;

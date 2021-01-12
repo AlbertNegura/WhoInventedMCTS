@@ -1,15 +1,8 @@
 package AMSPlayground;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-import java.lang.Math;
-
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
-import mcts.MCTS_Vanilla;
 import metadata.ai.Ai;
 import metadata.ai.heuristics.Heuristics;
 import metadata.ai.heuristics.terms.HeuristicTerm;
@@ -22,6 +15,11 @@ import util.Context;
 import util.Move;
 import utils.AIUtils;
 
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * A simple example implementation of a standard UCT approach.
  * <p>
@@ -29,13 +27,12 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMS_Rollout_BP extends AI {
+public class AMS_Rollout_BP_NST extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
     private static int recursiveStackDepth = 0;
-//    private final int maxStackDepth = 50000;
-    private final int maxStackDepth = Integer.MAX_VALUE;
+    private final int maxStackDepth = 50000;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -46,8 +43,15 @@ public class AMS_Rollout_BP extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
     protected int iterations = 0;
+    /**
+     * NST variables
+     */
+    protected Hashtable<Integer, Gram> grams;
+
+    protected final int MAX_GRAMS = 3;
+    protected final int MIN_VISITS = 7;
+    protected final double eps = 0.1;
 
     //-------------------------------------------------------------------------
 
@@ -61,8 +65,8 @@ public class AMS_Rollout_BP extends AI {
     /**
      * Constructor
      */
-    public AMS_Rollout_BP() {
-        this.friendlyName = "AMS_Rollout_BP";
+    public AMS_Rollout_BP_NST() {
+        this.friendlyName = "AMS_Rollout_BP NST";
     }
 
     //-------------------------------------------------------------------------
@@ -79,6 +83,9 @@ public class AMS_Rollout_BP extends AI {
         // Start out by creating a new root node (no tree reuse in this example)
         final Node root = new Node(null, null, context);
 
+        // Reset gram table
+        this.grams = new Hashtable<>();
+        resetIterations();
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
         final int maxIts = (maxIterations >= 0) ? maxIterations : 10000000;
@@ -87,7 +94,7 @@ public class AMS_Rollout_BP extends AI {
         double discountFactor = 1.0;
 
         recursiveStackDepth = 0;
-        resetIterations();
+
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
         for (int p = 1; p <= game.players().size(); ++p) {
@@ -162,9 +169,9 @@ public class AMS_Rollout_BP extends AI {
             qValueUCB[i] = qValue[i] * actionCount[i] / iteration;
             copyContext = new Context(context);
         }
-        updateIterations(iteration);
-        int bestMoveIndex = maxInteger(qValueUCB);
 
+        int bestMoveIndex = maxInteger(qValueUCB);
+        updateIterations(iteration);
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
@@ -228,7 +235,7 @@ public class AMS_Rollout_BP extends AI {
         copyContext = new Context(context);
         int legalMoveSize = iteration;
         // Get Q value plus UCB value
-        while (iteration < legalMoveSize + maxIterations &&
+        while (iteration < legalMoveSize + 50 &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));
@@ -282,29 +289,163 @@ public class AMS_Rollout_BP extends AI {
     }
 
     // Do MCTS Playout/Rollout, same as MCTS_Vanilla
+//    private double[] PlayOut(Node currentNode) {
+//        Context contextEnd = currentNode.context;
+//        Game game = contextEnd.game();
+//        if (!contextEnd.trial().over()) {
+//            // Run a playout if we don't already have a terminal game state in node
+//            contextEnd = new Context(contextEnd);
+//            game.playout
+//                    (
+//                            contextEnd,
+//                            null,
+//                            -1.0,
+//                            null,
+//                            null,
+//                            0,
+//                            -1,
+//                            0.f,
+//                            ThreadLocalRandom.current()
+//                    );
+//        }
+//        // This computes utilities for all players at the of the playout,
+//        // which will all be values in [-1.0, 1.0]
+//        return AIUtils.utilities(contextEnd);
+//    }
+
+    private FastArrayList<Move> getLegalMoves(Game game, Context context){
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+
+        // If we're playing a simultaneous-move game, some of the legal moves may be
+        // for different players. Extract only the ones that we can choose.
+        if (!game.isAlternatingMoveGame())
+            legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        return legalMoves;
+    }
+
+    // ExampleUCT line 89
     private double[] PlayOut(Node currentNode) {
         Context contextEnd = currentNode.context;
         Game game = contextEnd.game();
-        if (!contextEnd.trial().over()) {
-            // Run a playout if we don't already have a terminal game state in node
+
+        List<Move> history = new ArrayList<>();
+
+        while (!contextEnd.trial().over()){
             contextEnd = new Context(contextEnd);
-            game.playout
-                    (
-                            contextEnd,
-                            null,
-                            -1.0,
-                            null,
-                            null,
-                            0,
-                            -1,
-                            0.f,
-                            ThreadLocalRandom.current()
-                    );
+
+            FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
+
+            Move bestMove = null;
+            final double p = ThreadLocalRandom.current().nextDouble(1d);
+            if (p <= eps){   // Explore
+                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                bestMove = legalMoves.get(r);
+            }
+
+            else {          // Exploit
+                double bestScore = Double.NEGATIVE_INFINITY;
+                int numBestFound = 0;
+
+                for (int m = 0; m < legalMoves.size(); m++) {
+                    Move evaluatingMove = legalMoves.get(m);
+                    final int mover = contextEnd.state().mover();
+
+                    ArrayList<Double> gramScoreSums = new ArrayList<>();
+
+                    Gram currentGram = grams.get(evaluatingMove.hashCode());
+
+                    if(currentGram != null){
+                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
+                    }
+
+                    else{
+                        gramScoreSums.add(Double.MAX_VALUE);
+                    }
+
+                    double moveScore = 0;
+
+                    for (int i = 0; i < gramScoreSums.size(); i++){
+                        moveScore += gramScoreSums.get(i);
+                    }
+
+                    moveScore = moveScore / gramScoreSums.size();
+
+                    if (moveScore > bestScore) {
+                        bestScore = moveScore;
+                        bestMove = evaluatingMove;
+                        numBestFound = 1;
+                    } else if (moveScore == bestScore &&
+                            ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                        bestMove = evaluatingMove;
+                    }
+                }
+            }
+
+            history.add(bestMove);
+            game.apply(contextEnd, bestMove);
         }
+
+        double[] results = AIUtils.utilities(contextEnd);
+
+        for (int i = 0; i < history.size(); ++i){
+            Gram currentGram = this.grams.get(history.get(i).hashCode());
+            if (currentGram == null){
+                addGram(null, history, i, 1, results);
+            }
+
+            else {
+                updateGramsScoreSums(currentGram, history, i, 1, results);
+            }
+        }
+
         // This computes utilities for all players at the of the playout,
         // which will all be values in [-1.0, 1.0]
-        return AIUtils.utilities(contextEnd);
+        return results;
     }
+
+    private Gram addGram(Gram nextGram, List<Move> history, int currentMove, int gram, double[] results){
+        Gram newGram = new Gram(history.get(currentMove), nextGram , results);
+
+        if (nextGram == null){
+            grams.put(history.get(currentMove).hashCode(), newGram);
+        }
+        else {
+            nextGram.previousGram.put(history.get(currentMove).hashCode(), newGram);
+        }
+
+        if (currentMove > 0 && gram <= MAX_GRAMS){
+            addGram(newGram, history, currentMove-1, ++gram, results);
+        }
+
+        return newGram;
+    }
+
+    private void updateGramsScoreSums(Gram currentGram, List<Move> history, int currentMove, int gram, double[] results){
+        currentGram.UpdateScoreSums(results);
+
+        if (currentMove > 0 && gram <= MAX_GRAMS){
+            Gram previousGram = currentGram.previousGram.get(history.get(currentMove-1).hashCode());
+            if(previousGram == null){
+                addGram(currentGram, history, --currentMove, ++gram, results);
+            }
+            else {
+                updateGramsScoreSums(previousGram, history, --currentMove, ++gram, results);
+            }
+        }
+    }
+
+    private ArrayList<Double> getGramsScoreSums(Gram currentGram, ArrayList<Double> gramScoreSums, List<Move> history, int currentMove, int gram, int mover){
+        ArrayList<Double> gramScores = gramScoreSums;
+        gramScores.add(currentGram.MoverScoreSums(mover));
+        if (currentMove > 0 && gram <= MAX_GRAMS){
+            Gram previousGram = currentGram.previousGram.get(history.get(currentMove-1).hashCode());
+            if (previousGram != null && previousGram.visitCount >= MIN_VISITS){
+                gramScores = getGramsScoreSums(previousGram, gramScores, history, currentMove-1, gram+1, mover);
+            }
+        }
+        return gramScores;
+    }
+
 
     //Backpropagate results, similar to MCTS_Vanilla backpropagation
     private double[][] Backpropagation(Node currentNode, double[] result, double[][] values, int action) {
@@ -342,7 +483,7 @@ public class AMS_Rollout_BP extends AI {
             return new Node(current, move, context);
         }
 
-        // use UCB1 equation to select from all children, with legacy.random tie-breaking
+        // use UCB1 equation to select from all children, with random tie-breaking
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
         final double twoParentLog = 2.0 * Math.log(Math.max(1, current.visitCount));
@@ -367,7 +508,7 @@ public class AMS_Rollout_BP extends AI {
                     ucb1Value == bestValue &&
                             ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
             ) {
-                // this case implements legacy.random tie-breaking
+                // this case implements random tie-breaking
                 bestChild = child;
             }
         }
@@ -403,7 +544,7 @@ public class AMS_Rollout_BP extends AI {
                     visitCount == bestVisitCount &&
                             ThreadLocalRandom.current().nextInt() % ++numBestFound == 0
             ) {
-                // this case implements legacy.random tie-breaking
+                // this case implements random tie-breaking
                 bestChild = child;
             }
         }
@@ -437,6 +578,9 @@ public class AMS_Rollout_BP extends AI {
         this.lastSearchedRootContext = null;
         this.lastReturnedMove = null;
         this.numPlayersInGame = game.players().count();
+
+        // NST
+        this.grams = new Hashtable<>();
     }
 
     @Override
@@ -463,6 +607,39 @@ public class AMS_Rollout_BP extends AI {
     }
 
     //-------------------------------------------------------------------------
+
+    /**
+     * Inner class for grams
+     */
+    private static class Gram{
+        private final Hashtable<Integer, Gram> previousGram;
+
+        private int visitCount;
+
+        private double[] scoreSums;
+
+        public Gram(final Move move, final Gram nextGram, final double[] scoreSums){
+            this.previousGram = new Hashtable<>();
+            this.visitCount = 1;
+            this.scoreSums = scoreSums;
+
+            if (nextGram != null){
+                nextGram.previousGram.put(move.hashCode(), this);
+            }
+        }
+
+        public double MoverScoreSums(int mover){
+            return scoreSums[mover] / visitCount;
+        }
+
+        public void UpdateScoreSums(final double[] scoreSums){
+            visitCount += 1;
+            for (int i = 0; i < scoreSums.length; ++i){
+                this.scoreSums[i] += scoreSums[i];
+            }
+        }
+    }
+
 
     /**
      * Inner class for nodes used by AMS

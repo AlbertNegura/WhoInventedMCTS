@@ -1,6 +1,5 @@
-package mcts;
+package mcts.legacy;
 
-import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -12,26 +11,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Vanilla extends Group12AI {
+public class mcts_v0 extends AI {
 
     //-------------------------------------------------------------------------
 
     /** Our player index */
     protected int player = -1;
-    protected String analysisReport;
-    protected int lastNumPlayoutActions;
-    public int iterations = 0;
-    protected double C;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Vanilla(double C)
+    public mcts_v0()
     {
-        this.friendlyName = "MCTS v2";
-        this.C = C;
+        this.friendlyName = "MCTS v0";
     }
 
     //-------------------------------------------------------------------------
@@ -51,42 +45,12 @@ public class MCTS_Vanilla extends Group12AI {
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
         int numIterations = 0;
-        resetIterations();
         // keep searching until running out of time (ExampleUCT)
         while(numIterations < maxIts && 					// Respect iteration limit
                 System.currentTimeMillis() < stopTime && 	// Respect time limit
                 !wantsInterrupt								// Respect GUI user clicking the pause button
         ){
-            Node selectedNode = Selection(root);
-            // A simulated game is played
-            double[] result = PlayOut(selectedNode);
-            // The result is backpropagated
-            Backpropagation(selectedNode, result);
-            numIterations++;
-        }
-        Move bestMove = finalMoveSelection(root);
-        updateIterations(numIterations);
-        // Return best move to play from root
-        return bestMove;
-    }
-
-    private Move MCTSMaxN(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth, int startDepth) {
-        // NOT CURRENTLY SUPPORTED - STILL TRYING TO FIGURE OUT HOW MAXN SEARCH TREES WOULD WORK WITH LUDII
-        // initialize Monte-Carlo Tree
-        Node root = new Node(null, null, context);
-
-        // calculate time to stop search in milliseconds
-        final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
-        final int numPlayers = game.players().count();
-
-        int numIterations = 0;
-        // keep searching until running out of time (ExampleUCT)
-        while(numIterations < maxIts && 					// Respect iteration limit
-                System.currentTimeMillis() < stopTime && 	// Respect time limit
-                !wantsInterrupt								// Respect GUI user clicking the pause button
-        ){
-            Node currentNode = RandomSelection(root);
+            Node currentNode = Select(root);
             // A simulated game is played
             double[] result = PlayOut(currentNode);
             // A node is added
@@ -95,86 +59,15 @@ public class MCTS_Vanilla extends Group12AI {
             Backpropagation(currentNode, result);
             numIterations++;
         }
-        Move bestMove = finalMoveSelection(root);
+        Move bestMove = getBestMove(root);
         System.out.println("timeout");
 
         // Return legacy.random move
         return bestMove;
-
-    }
-
-    private Node Selection(Node currentNode){
-//        Node current = currentNode;
-        // Traverse tree
-        while (true) {
-            if (currentNode.context.trial().over()) {
-                // We've reached a terminal state
-                break;
-            }
-
-            currentNode = SelectionUCT(currentNode);
-
-            if (currentNode.visitCount == 0) {
-                // We've expanded a new node, time for playout!
-                break;
-            }
-        }
-        return currentNode;
-    }
-
-    private Node SelectionUCT(Node currentNode) {
-        // If there is any unexpanded move from the current node...
-        if (!currentNode.unexpandedMoves.isEmpty())
-        {
-            // ... randomly select an unexpanded move
-            final Move move = currentNode.unexpandedMoves.remove(
-                    ThreadLocalRandom.current().nextInt(currentNode.unexpandedMoves.size()));
-
-            // create a copy of context
-            final Context context = new Context(currentNode.context);
-
-            // apply the move
-            context.game().apply(context, move);
-
-            // create new node and return it
-            // This is EXPANSION already.
-            return new Node(currentNode, move, context);
-        }
-
-        return BestChild(currentNode);
-    }
-
-    private Node BestChild(Node currentNode){
-
-        Node bestChild = null;
-        double bestValue = Double.NEGATIVE_INFINITY;
-
-        final double parentLog = Math.log(currentNode.visitCount);
-        final double twoParentLog = 2.0 * Math.log(Math.max(1, currentNode.visitCount));
-
-        final int mover = currentNode.context.state().mover();
-
-        for(int i = 0; i < currentNode.children.size(); i++){
-            final Node child = currentNode.children.get(i);
-//            final double childValue = child.scoreSums[player] / child.visitCount;
-            final double childValue = child.scoreSums[mover] / child.visitCount;
-            final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
-
-//            final double exploit = child.scoreSums[mover] / child.visitCount;
-//            final double explore = Math.sqrt(twoParentLog / child.visitCount);
-//            final double ucb1Value = exploit + explore;
-
-            if(ucbValue > bestValue) {
-                bestValue = ucbValue;
-                bestChild = child;
-            }
-        }
-
-        return bestChild;
     }
 
     // RANDOM SELECTION STRATEGY
-    private Node RandomSelection(Node currentNode) {
+    private Node Select(Node currentNode) {
 
         // Traverse tree
         while (true) {
@@ -195,7 +88,7 @@ public class MCTS_Vanilla extends Group12AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new MCTS_Vanilla.Node(currentNode, move, context);
+                currentNode = new mcts_v0.Node(currentNode, move, context);
             }
             else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
@@ -233,8 +126,6 @@ public class MCTS_Vanilla extends Group12AI {
                             ThreadLocalRandom.current()
                     );
         }
-        // This computes utilities for all players at the of the playout,
-        // which will all be values in [-1.0, 1.0]
         return AIUtils.utilities(contextEnd);
     }
 
@@ -242,77 +133,70 @@ public class MCTS_Vanilla extends Group12AI {
         Node parentNode = currentNode.parent;
         if (parentNode != null){
             parentNode.children.add(currentNode);
+//            parentNode.unexpandedMoves.remove(parentNode.unexpandedMoves.indexOf(currentNode.moveFromParent));
         }
     }
 
     // ExampleUCT line 113
     private void Backpropagation(Node currentNode, double[] result) {
-        final int playersCount = currentNode.context.game().players().count();
         while (currentNode != null){
-            currentNode.visitCount += 1;
-            for (int player = 0; player <= playersCount; player++) {
+            currentNode.visitCount++;
+            for (int player = 0; player < currentNode.context.game().players().count(); player++) {
                 currentNode.scoreSums[player] += result[player];
             }
             currentNode = currentNode.parent;
         }
     }
 
-    /**
-     * Final move selection implementing "Max child" strategy
-     * where the max child is the child that has the highest value
-     * @param root
-     * @return
-     */
-    private Move finalMoveSelection(Node root) {
-        Node bestChild = null;
-        final int mover = root.context.state().mover();
-        double bestValue = Double.NEGATIVE_INFINITY;
+    // ExampleUCT finalMoveSelection method
+    private Move getBestMove(Node root) {
+        mcts_v0.Node bestChild = null;
+        int bestVisitCount = Integer.MIN_VALUE;
+        int numBestFound = 0;
 
-        for (int i = 0; i < root.children.size(); ++i) {
-            final Node child = root.children.get(i);
-            final double childValue = child.scoreSums[mover] / child.visitCount;
+        final int numChildren = root.children.size();
 
-            if (childValue > bestValue) {
-                bestValue = childValue;
+        for (int i = 0; i < numChildren; ++i) {
+            final mcts_v0.Node child = root.children.get(i);
+            final int visitCount = child.visitCount;
+
+            if (visitCount > bestVisitCount) {
+                bestVisitCount = visitCount;
+                bestChild = child;
+                numBestFound = 1;
+            }
+            else if (visitCount == bestVisitCount && ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                // this case implements legacy.random tie-breaking
                 bestChild = child;
             }
-
         }
 
         return bestChild.moveFromParent;
     }
 
+    private boolean timeLeft(long stopTime) {
+        return System.currentTimeMillis() < stopTime;
+    }
+
+    // Get legacy.random move
+    private Move RandomMove(Game game, Context context) {
+
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+
+        // If we're playing a simultaneous-move game, some of the legal moves may be
+        // for different players. Extract only the ones that we can choose.
+        if (!game.isAlternatingMoveGame())
+            legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+
+        final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+        return legalMoves.get(r);
+    }
+
+
     @Override
     public void initAI(final Game game, final int playerID)
     {
         this.player = playerID;
-        this.analysisReport = null;
-    }
-
-    @Override
-    public boolean supportsGame(final Game game) {
-        return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
-    }
-
-    public int getIterations(){
-        return this.iterations;
-    }
-
-    protected void updateIterations(int iterations){
-        this.iterations += iterations;
-    }
-
-    protected void resetIterations(){
-        this.iterations = 0;
-    }
-
-    public String generateAnalysisReport() {
-        return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
-    }
-
-
-    public int getNumPlayoutActions() {
-        return this.lastNumPlayoutActions;
     }
 
     //-------------------------------------------------------------------------
@@ -326,7 +210,7 @@ public class MCTS_Vanilla extends Group12AI {
         /**
          * Our parent node
          */
-        private final MCTS_Vanilla.Node parent;
+        private final mcts_v0.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -351,7 +235,7 @@ public class MCTS_Vanilla extends Group12AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_Vanilla.Node> children = new ArrayList<MCTS_Vanilla.Node>();
+        private final List<mcts_v0.Node> children = new ArrayList<mcts_v0.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -365,7 +249,7 @@ public class MCTS_Vanilla extends Group12AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_Vanilla.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final mcts_v0.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;
