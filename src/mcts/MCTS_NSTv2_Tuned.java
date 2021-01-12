@@ -8,10 +8,11 @@ import util.Move;
 import utils.AIUtils;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Various_Enhancements extends AI {
+public class MCTS_NSTv2_Tuned extends AI {
 
     //-------------------------------------------------------------------------
 
@@ -20,17 +21,22 @@ public class MCTS_Various_Enhancements extends AI {
     protected String analysisReport;
     protected int lastNumPlayoutActions;
 
+    protected Hashtable<Integer, Gram> grams;
 
-    protected String selectionStrategy = "UCB1-Tuned"; // UCB1-Tuned, UCT
+    protected final int MAX_GRAMS = 3;
+    protected final int MIN_VISITS = 7;
+    protected final double eps = 0;
+    protected final double decayFactor = 0.9;
+    protected double playedMoves = 0;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Various_Enhancements()
+    public MCTS_NSTv2_Tuned()
     {
-        this.friendlyName = "MCTS Playground";
+        this.friendlyName = "MCTS NST v2 UCB1-Tuned";
         this.analysisReport = null;
     }
 
@@ -45,6 +51,7 @@ public class MCTS_Various_Enhancements extends AI {
     private Move MCTS(Game game, Context context, double maxSeconds, int maxIterations, int maxDepth) {
         // initialize Monte-Carlo Tree
         Node root = new Node(null, null, context);
+        grams = new Hashtable<>();
 
         // calculate time to stop search in milliseconds
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
@@ -63,32 +70,36 @@ public class MCTS_Various_Enhancements extends AI {
             Backpropagation(selectedNode, result);
             numIterations++;
         }
+        ++playedMoves;
         Move bestMove = finalMoveSelection(root);
 
         // Return best move to play from root
         return bestMove;
     }
 
+
     private Node Selection(Node currentNode){
 //        Node current = currentNode;
         // Traverse tree
+        List<Move> history = new ArrayList<>();
         while (true) {
             if (currentNode.context.trial().over()) {
                 // We've reached a terminal state
                 break;
             }
 
-            currentNode = SelectionUCT(currentNode);
+            currentNode = SelectionUCT(currentNode, history);
 
             if (currentNode.visitCount == 0) {
                 // We've expanded a new node, time for playout!
                 break;
             }
+            history.add(currentNode.moveFromParent);
         }
         return currentNode;
     }
 
-    private Node SelectionUCT(Node currentNode) {
+    private Node SelectionUCT(Node currentNode, List<Move> history) {
         // If there is any unexpanded move from the current node...
         if (!currentNode.unexpandedMoves.isEmpty())
         {
@@ -98,6 +109,60 @@ public class MCTS_Various_Enhancements extends AI {
 
             // create a copy of context
             final Context context = new Context(currentNode.context);
+//
+//            FastArrayList<Move> unexpandedMoves = currentNode.unexpandedMoves;
+//
+//            int bestMoveIndex = -1;
+//            Move bestMove = null;
+//            final double p = ThreadLocalRandom.current().nextDouble(1d);
+//            if (true){   // Explore
+//                final int r = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());
+//                bestMove = unexpandedMoves.get(r);
+//                bestMoveIndex = r;
+//            }
+//
+//            else {          // Exploit
+//                double bestScore = Double.NEGATIVE_INFINITY;
+//                int numBestFound = 0;
+//
+//                for (int m = 0; m < unexpandedMoves.size(); m++) {
+//                    Move evaluatingMove = unexpandedMoves.get(m);
+//                    final int mover = context.state().mover();
+//
+//                    ArrayList<Double> gramScoreSums = new ArrayList<>();
+//
+//                    Gram currentGram = grams.get(evaluatingMove.hashCode());
+//
+//                    if(currentGram != null){
+//                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
+//                    }
+//
+//                    else{
+//                        gramScoreSums.add(Double.MAX_VALUE);
+//                    }
+//
+//                    double moveScore = 0;
+//
+//                    for (int i = 0; i < gramScoreSums.size(); i++){
+//                        moveScore += gramScoreSums.get(i);
+//                    }
+//
+//                    moveScore = moveScore / gramScoreSums.size();
+//
+//                    if (moveScore > bestScore) {
+//                        bestScore = moveScore;
+//                        bestMove = evaluatingMove;
+//                        bestMoveIndex = m;
+//                        numBestFound = 1;
+//                    } else if (moveScore == bestScore &&
+//                            ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+//                        bestMove = evaluatingMove;
+//                        bestMoveIndex = m;
+//                    }
+//                }
+//            }
+//
+//            final Move move = currentNode.unexpandedMoves.remove(bestMoveIndex);
 
             // apply the move
             context.game().apply(context, move);
@@ -111,28 +176,19 @@ public class MCTS_Various_Enhancements extends AI {
     }
 
     private Node BestChild(Node currentNode){
-        final double C = 0.4f;
 
         Node bestChild = null;
         double bestValue = Double.NEGATIVE_INFINITY;
 
         final double parentLog = Math.log(currentNode.visitCount);
-//        final double twoParentLog = 2.0 * Math.log(Math.max(1, currentNode.visitCount));
 
         final int mover = currentNode.context.state().mover();
 
         for(int i = 0; i < currentNode.children.size(); i++){
             final Node child = currentNode.children.get(i);
-//            final double childValue = child.scoreSums[player] / child.visitCount;
             final double childValue = child.scoreSums[mover] / child.visitCount;
-            final double variance = selectionStrategy.equals("UCT") ? childValue : childValue * (1-childValue);
-            final double logTerm = selectionStrategy.equals("UCT") ? C * Math.sqrt(parentLog / child.visitCount) :
-                    Math.sqrt(parentLog / child.visitCount * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
-            final double ucbValue =  childValue + logTerm;
-
-//            final double exploit = child.scoreSums[mover] / child.visitCount;
-//            final double explore = Math.sqrt(twoParentLog / child.visitCount);
-//            final double ucb1Value = exploit + explore;
+            final double variance = childValue * (1-childValue);
+            final double ucbValue = childValue + Math.sqrt(parentLog / child.visitCount * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
 
             if(ucbValue > bestValue) {
                 bestValue = ucbValue;
@@ -165,7 +221,7 @@ public class MCTS_Various_Enhancements extends AI {
                 context.game().apply(context, move);
 
                 // create new node and return it
-                currentNode = new MCTS_Various_Enhancements.Node(currentNode, move, context);
+                currentNode = new MCTS_NSTv2_Tuned.Node(currentNode, move, context);
             }
             else if(!currentNode.children.isEmpty()){
                 // randomly select a children node
@@ -182,30 +238,137 @@ public class MCTS_Various_Enhancements extends AI {
         return currentNode;
     }
 
+    private FastArrayList<Move> getLegalMoves(Game game, Context context){
+        FastArrayList<Move> legalMoves = game.moves(context).moves();
+
+        // If we're playing a simultaneous-move game, some of the legal moves may be
+        // for different players. Extract only the ones that we can choose.
+        if (!game.isAlternatingMoveGame())
+            legalMoves = AIUtils.extractMovesForMover(legalMoves, player);
+        return legalMoves;
+    }
+
     // ExampleUCT line 89
     private double[] PlayOut(Node currentNode) {
         Context contextEnd = currentNode.context;
         Game game = contextEnd.game();
-        if (!contextEnd.trial().over())
-        {
-            // Run a playout if we don't already have a terminal game state in node
+
+        List<Move> history = new ArrayList<>();
+
+        while (!contextEnd.trial().over()){
             contextEnd = new Context(contextEnd);
-            game.playout
-                    (
-                            contextEnd,
-                            null,
-                            -1.0,
-                            null,
-                            null,
-                            0,
-                            -1,
-                            0.f,
-                            ThreadLocalRandom.current()
-                    );
+
+            FastArrayList<Move> legalMoves = getLegalMoves(game, contextEnd);
+
+            Move bestMove = null;
+            final double p = ThreadLocalRandom.current().nextDouble(1d);
+            if (p <= eps){   // Explore
+                final int r = ThreadLocalRandom.current().nextInt(legalMoves.size());
+                bestMove = legalMoves.get(r);
+            }
+
+            else {          // Exploit
+                double bestScore = Double.NEGATIVE_INFINITY;
+                int numBestFound = 0;
+
+                for (int m = 0; m < legalMoves.size(); m++) {
+                    Move evaluatingMove = legalMoves.get(m);
+                    final int mover = contextEnd.state().mover();
+
+                    ArrayList<Double> gramScoreSums = new ArrayList<>();
+
+                    Gram currentGram = grams.get(evaluatingMove.hashCode());
+
+                    if(currentGram != null){
+                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
+                    }
+
+                    else{
+                        gramScoreSums.add(Double.MAX_VALUE);
+                    }
+
+                    double moveScore = 0;
+
+                    for (int i = 0; i < gramScoreSums.size(); i++){
+                        moveScore += gramScoreSums.get(i);
+                    }
+
+                    moveScore = moveScore / gramScoreSums.size();
+
+                    if (moveScore > bestScore) {
+                        bestScore = moveScore;
+                        bestMove = evaluatingMove;
+                        numBestFound = 1;
+                    } else if (moveScore == bestScore &&
+                            ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                        bestMove = evaluatingMove;
+                    }
+                }
+            }
+
+            history.add(bestMove);
+            game.apply(contextEnd, bestMove);
         }
+
+        double[] results = AIUtils.utilities(contextEnd);
+
+        for (int i = 0; i < history.size(); ++i){
+            Gram currentGram = this.grams.get(history.get(i).hashCode());
+            if (currentGram == null){
+                addGram(null, history, i, 1, results);
+            }
+
+            else {
+                updateGramsScoreSums(currentGram, history, i, 1, results);
+            }
+        }
+
         // This computes utilities for all players at the of the playout,
         // which will all be values in [-1.0, 1.0]
-        return AIUtils.utilities(contextEnd);
+        return results;
+    }
+
+    private Gram addGram(Gram nextGram, List<Move> history, int currentMove, int gram, double[] results){
+        Gram newGram = new Gram(history.get(currentMove), nextGram , results);
+
+        if (nextGram == null){
+            grams.put(history.get(currentMove).hashCode(), newGram);
+        }
+        else {
+            nextGram.previousGram.put(history.get(currentMove).hashCode(), newGram);
+        }
+
+        if (currentMove > 0 && gram <= MAX_GRAMS){
+            addGram(newGram, history, currentMove-1, ++gram, results);
+        }
+
+        return newGram;
+    }
+
+    private void updateGramsScoreSums(Gram currentGram, List<Move> history, int currentMove, int gram, double[] results){
+        currentGram.UpdateScoreSums(results);
+
+        if (currentMove > 0 && gram <= MAX_GRAMS){
+            Gram previousGram = currentGram.previousGram.get(history.get(currentMove-1).hashCode());
+            if(previousGram == null){
+                addGram(currentGram, history, --currentMove, ++gram, results);
+            }
+            else {
+                updateGramsScoreSums(previousGram, history, --currentMove, ++gram, results);
+            }
+        }
+    }
+
+    private ArrayList<Double> getGramsScoreSums(Gram currentGram, ArrayList<Double> gramScoreSums, List<Move> history, int currentMove, int gram, int mover){
+        ArrayList<Double> gramScores = gramScoreSums;
+        gramScores.add(currentGram.MoverScoreSums(mover));
+        if (currentMove > 0 && gram <= MAX_GRAMS){
+            Gram previousGram = currentGram.previousGram.get(history.get(currentMove-1).hashCode());
+            if (previousGram != null && previousGram.visitCount >= MIN_VISITS){
+                gramScores = getGramsScoreSums(previousGram, gramScores, history, currentMove-1, gram+1, mover);
+            }
+        }
+        return gramScores;
     }
 
     private void Expand(Node currentNode) {
@@ -269,12 +432,36 @@ public class MCTS_Various_Enhancements extends AI {
         return this.analysisReport==null ? "No analysis generated" : this.analysisReport;
     }
 
-
-    public int getNumPlayoutActions() {
-        return this.lastNumPlayoutActions;
-    }
-
     //-------------------------------------------------------------------------
+
+    private static class Gram{
+        private final Hashtable<Integer, Gram> previousGram;
+
+        private int visitCount;
+
+        private double[] scoreSums;
+
+        public Gram(final Move move, final Gram nextGram, final double[] scoreSums){
+            this.previousGram = new Hashtable<>();
+            this.visitCount = 1;
+            this.scoreSums = scoreSums;
+
+            if (nextGram != null){
+                nextGram.previousGram.put(move.hashCode(), this);
+            }
+        }
+
+        public double MoverScoreSums(int mover){
+            return scoreSums[mover] / visitCount;
+        }
+
+        public void UpdateScoreSums(final double[] scoreSums){
+            visitCount += 1;
+            for (int i = 0; i < scoreSums.length; ++i){
+                this.scoreSums[i] += scoreSums[i];
+            }
+        }
+    }
 
     /**
      * Inner class for nodes used by MCTS,
@@ -285,7 +472,7 @@ public class MCTS_Various_Enhancements extends AI {
         /**
          * Our parent node
          */
-        private final MCTS_Various_Enhancements.Node parent;
+        private final MCTS_NSTv2_Tuned.Node parent;
 
         /**
          * The move that led from parent to this node
@@ -310,7 +497,7 @@ public class MCTS_Various_Enhancements extends AI {
         /**
          * Child nodes
          */
-        private final List<MCTS_Various_Enhancements.Node> children = new ArrayList<MCTS_Various_Enhancements.Node>();
+        private final List<MCTS_NSTv2_Tuned.Node> children = new ArrayList<MCTS_NSTv2_Tuned.Node>();
 
         /**
          * List of moves for which we did not yet create a child node
@@ -324,7 +511,7 @@ public class MCTS_Various_Enhancements extends AI {
          * @param moveFromParent
          * @param context
          */
-        public Node(final MCTS_Various_Enhancements.Node parent, final Move moveFromParent, final Context context) {
+        public Node(final MCTS_NSTv2_Tuned.Node parent, final Move moveFromParent, final Context context) {
             this.parent = parent;
             this.moveFromParent = moveFromParent;
             this.context = context;
