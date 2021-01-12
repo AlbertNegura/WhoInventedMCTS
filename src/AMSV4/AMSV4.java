@@ -102,7 +102,7 @@ public class AMSV4 extends AI {
             copyGame.apply(copyContext, legalMoves.get(i));
             actionCount[i] = 1;
 
-            double returnedValue = -AMS(copyGame, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            double returnedValue = -AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime);
             values[i] = returnedValue;
             copyGame = game;
             ++iteration;
@@ -131,7 +131,7 @@ public class AMSV4 extends AI {
             int bestMoveIndex = maxInteger(qValueUCB);
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            double test = -AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            double test = -AMS(game, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime);
 
             vHatValuesSum[bestMoveIndex] += test;
             ++iteration;

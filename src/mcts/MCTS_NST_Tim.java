@@ -236,9 +236,6 @@ public class MCTS_NST_Tim extends AI {
 
             Move bestMove = null;
             double bestScore = Double.NEGATIVE_INFINITY;
-            int bestOneHash = 0;
-            int bestTwoHash = 0;
-            int bestThreeHash = 0;
             for (int m = 0; m < legalMoves.size(); m++) {
                 Move evaluatingMove = legalMoves.get(m);
                 double scoreGram1 = 100;
@@ -250,10 +247,10 @@ public class MCTS_NST_Tim extends AI {
                 int twoGramHash = 0;
                 int threeGramHash = 0;
                 if (history.size() == 1) {
-                    twoGramHash = history.get(0).hashCode() ^ evaluatingMove.hashCode();
+                    twoGramHash = history.get(0).hashCode() ^ oneGramHash;
                 } else if (history.size() > 1) {
-                    threeGramHash = history.get(history.size() - 2).hashCode() ^ history.get(history.size() - 1).hashCode() ^ evaluatingMove.hashCode();
-                    twoGramHash = history.get(history.size() - 1).hashCode() ^ evaluatingMove.hashCode();
+                    twoGramHash = history.get(history.size() - 1).hashCode() ^ oneGramHash;
+                    threeGramHash = history.get(history.size() - 2).hashCode() ^ twoGramHash;
                 }
                 Map hmValues = (Map) hashMap.get(oneGramHash);
                 if (hmValues != null) {
@@ -300,6 +297,7 @@ public class MCTS_NST_Tim extends AI {
 
         for (int i = history.size() - 1; i >= 0; i--) {
             int oneGramHash = history.get(i).hashCode();
+            int twoGramHash = 0;
             Map hmValues = (Map) hashMap.get(oneGramHash);
             if (hmValues == null) {
                 Map input = new HashMap();
@@ -319,7 +317,7 @@ public class MCTS_NST_Tim extends AI {
                 hashMap.put(oneGramHash, input);
             }
             if (i - 1 >= 0) {
-                int twoGramHash = history.get(i - 1).hashCode() ^ history.get(i).hashCode();
+                twoGramHash = history.get(i - 1).hashCode() ^ oneGramHash;
                 if (!hashMap.containsKey(twoGramHash)) {
                     Map input = new HashMap();
                     input.put("visitCount", 1);
@@ -339,7 +337,7 @@ public class MCTS_NST_Tim extends AI {
                 }
             }
             if (i - 2 >= 0) {
-                int threeGramHash = history.get(i - 2).hashCode() ^ history.get(i - 1).hashCode() ^ history.get(i).hashCode();
+                int threeGramHash = history.get(i - 2).hashCode() ^ twoGramHash;
                 if (!hashMap.containsKey(threeGramHash)) {
                     Map input = new HashMap();
                     input.put("visitCount", 1);

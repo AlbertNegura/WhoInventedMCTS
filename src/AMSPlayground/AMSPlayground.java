@@ -32,7 +32,9 @@ public class AMSPlayground extends AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
-    protected static final String selectionStrategy = "UCB1-Tuned"; // UCB1-Tuned, UCT
+//    protected static final String selectionStrategy = "UCB1-Tuned"; // UCB1-Tuned, UCT
+    protected static final String selectionStrategy = "UCT"; // UCB1-Tuned, UCT
+
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;
@@ -105,7 +107,7 @@ public class AMSPlayground extends AI {
             copyGame.apply(copyContext, legalMoves.get(i));
 //            float reward = this.heuristicValueFunction.computeValue(copyContext, this.player, 0.01F) - heuristicScore;
             actionCount[i] = 1;
-            double returnedValue = -AMS(copyGame, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            double returnedValue = -AMS(copyGame, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime);
             values[i] = returnedValue;
             copyGame = game;
             ++iteration;
@@ -120,7 +122,7 @@ public class AMSPlayground extends AI {
         double[] qValueUCB = new double[legalMoves.size()];
         copyContext = new Context(context);
         int legalMoveSize = iteration;
-        while (iteration < legalMoveSize + maxIterations &&
+        while (iteration < legalMoveSize + maxIts &&
                 System.currentTimeMillis() < stopTime) {
             for (int i = 0; i < legalMoves.size(); ++i) {
                 copyGame.apply(copyContext, legalMoves.get(i));
@@ -134,7 +136,7 @@ public class AMSPlayground extends AI {
 //            vHatValuesSum[bestMoveIndex] += values[bestMoveIndex];
             actionCount[bestMoveIndex] += 1;
             game.apply(copyContext, legalMoves.get(bestMoveIndex));
-            double test = -AMS(game, copyContext, maxIterations, maxDepth - 1, opponents[0], stopTime);
+            double test = -AMS(game, copyContext, maxIts, maxDepth - 1, opponents[0], stopTime);
 
             vHatValuesSum[bestMoveIndex] += test;
             ++iteration;

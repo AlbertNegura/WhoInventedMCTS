@@ -1,6 +1,6 @@
 package experiments;
 
-import AMSPlayground.AMSPlayground;
+import AMSPlayground.*;
 import AMSTable.AMSTable;
 import AMSV3.AMSV3;
 import AMSV4.AMSV4;
@@ -9,8 +9,7 @@ import game.Game;
 import game.types.state.GameType;
 import main.FileHandling;
 import main.collections.FastArrayList;
-import mcts.ExampleUCT;
-import mcts.MCTS_Vanilla;
+import mcts.*;
 import random.RandomAI;
 import util.*;
 import util.state.containerState.ContainerState;
@@ -31,7 +30,7 @@ public class Experiments {
 
     public static void main(final String[] args) {
         // one of the games is "Amazons.lud". Let's load it
-		Game game = GameLoader.loadGameFromName("Connect Four.lud");
+		Game game = GameLoader.loadGameFromName("Havannah.lud");
 
 
         // the game's "stateFlags" contain properties of the game that may be
@@ -66,15 +65,15 @@ public class Experiments {
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new RandomAI());
+                agents.add(new AMSPlayground());
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new AMSPlayground());
+                agents.add(new MCTS_Vanilla());
             }
         }
 
         // number of games we'd like to play
-        final int numGames = 50;
+        final int numGames = 1;
         int[] results = new int[2];
         long[] times = new long[2];
         int[] selectedActions = new int[2];
@@ -139,9 +138,9 @@ public class Experiments {
                         (
                                 game,
                                 new Context(context),
+                                1,
                                 -1,
-                                20,
-                                4
+                                2
                         );
                 long selectionTime = System.currentTimeMillis() - st;
                 if(mover == 1) {
@@ -154,7 +153,6 @@ public class Experiments {
                     times[1] += selectionTime;
                     selectedActions[1] += 1;
                 }
-
                 // apply the chosen move
                 game.apply(context, move);
             }

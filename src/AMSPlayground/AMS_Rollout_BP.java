@@ -34,7 +34,8 @@ public class AMS_Rollout_BP extends AI {
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
     private static int recursiveStackDepth = 0;
-    private final int maxStackDepth = 50000;
+//    private final int maxStackDepth = 50000;
+    private final int maxStackDepth = Integer.MAX_VALUE;
     protected double autoPlaySeconds = 0.0D;
     protected float estimatedRootScore = 0.0F;
     protected float maxHeuristicEval = 0.0F;

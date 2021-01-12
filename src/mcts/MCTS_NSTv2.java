@@ -27,7 +27,7 @@ public class MCTS_NSTv2 extends AI {
 
     protected final int MAX_GRAMS = 3;
     protected final int MIN_VISITS = 7;
-    protected final double eps = 0.9;
+    protected final double eps = 0;
     protected final double decayFactor = 0.9;
     protected double playedMoves = 0;
 
