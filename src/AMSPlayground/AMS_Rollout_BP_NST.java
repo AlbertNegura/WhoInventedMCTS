@@ -43,7 +43,7 @@ public class AMS_Rollout_BP_NST extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
+    protected int iterations = 0;
     /**
      * NST variables
      */
@@ -85,7 +85,7 @@ public class AMS_Rollout_BP_NST extends AI {
 
         // Reset gram table
         this.grams = new Hashtable<>();
-
+        resetIterations();
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
         final int maxIts = (maxIterations >= 0) ? maxIterations : 10000000;
@@ -171,7 +171,7 @@ public class AMS_Rollout_BP_NST extends AI {
         }
 
         int bestMoveIndex = maxInteger(qValueUCB);
-
+        updateIterations(iteration);
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
@@ -271,7 +271,7 @@ public class AMS_Rollout_BP_NST extends AI {
                 estimatedReturnValue[p] += ((double) actionCount[i] / (iteration)) * qValue[p][i];
             }
         }
-
+        updateIterations(iteration);
         return estimatedReturnValue;
     }
 
@@ -592,6 +592,18 @@ public class AMS_Rollout_BP_NST extends AI {
             return false;
 
         return true;
+    }
+
+    public int getIterations(){
+        return this.iterations;
+    }
+
+    protected void updateIterations(int iterations){
+        this.iterations += iterations;
+    }
+
+    protected void resetIterations(){
+        this.iterations = 0;
     }
 
     //-------------------------------------------------------------------------
