@@ -22,6 +22,7 @@ public class MCTS_MAST extends AI {
 
     protected Hashtable<Integer, Gram> grams;
     protected final double eps = 0.1;
+    protected int iterations = 0;
 
     //-------------------------------------------------------------------------
 
@@ -52,6 +53,7 @@ public class MCTS_MAST extends AI {
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
         int numIterations = 0;
+        resetIterations();
         // keep searching until running out of time (ExampleUCT)
         while(numIterations < maxIts && 					// Respect iteration limit
                 System.currentTimeMillis() < stopTime && 	// Respect time limit
@@ -66,7 +68,7 @@ public class MCTS_MAST extends AI {
         }
 
         Move bestMove = finalMoveSelection(root);
-
+        updateIterations(numIterations);
         // Return best move to play from root
         return bestMove;
     }
@@ -303,6 +305,18 @@ public class MCTS_MAST extends AI {
     @Override
     public boolean supportsGame(final Game game) {
         return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
+    }
+
+    public int getIterations(){
+        return this.iterations;
+    }
+
+    protected void updateIterations(int iterations){
+        this.iterations += iterations;
+    }
+
+    protected void resetIterations(){
+        this.iterations = 0;
     }
 
 

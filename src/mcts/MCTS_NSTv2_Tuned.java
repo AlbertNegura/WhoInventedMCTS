@@ -28,6 +28,7 @@ public class MCTS_NSTv2_Tuned extends AI {
     protected final double eps = 0;
     protected final double decayFactor = 0.9;
     protected double playedMoves = 0;
+    protected int iterations = 0;
 
     //-------------------------------------------------------------------------
 
@@ -58,6 +59,7 @@ public class MCTS_NSTv2_Tuned extends AI {
         final int maxIts = (maxIterations >= 0) ? maxIterations : Integer.MAX_VALUE;
 
         int numIterations = 0;
+        resetIterations();
         // keep searching until running out of time (ExampleUCT)
         while(numIterations < maxIts && 					// Respect iteration limit
                 System.currentTimeMillis() < stopTime && 	// Respect time limit
@@ -72,7 +74,7 @@ public class MCTS_NSTv2_Tuned extends AI {
         }
         ++playedMoves;
         Move bestMove = finalMoveSelection(root);
-
+        updateIterations(numIterations);
         // Return best move to play from root
         return bestMove;
     }
@@ -427,6 +429,17 @@ public class MCTS_NSTv2_Tuned extends AI {
         return !game.isStochasticGame() && !game.hiddenInformation() && game.isAlternatingMoveGame();
     }
 
+    public int getIterations(){
+        return this.iterations;
+    }
+
+    protected void updateIterations(int iterations){
+        this.iterations += iterations;
+    }
+
+    protected void resetIterations(){
+        this.iterations = 0;
+    }
 
     public String generateAnalysisReport() {
         return this.analysisReport==null ? "No analysis generated" : this.analysisReport;

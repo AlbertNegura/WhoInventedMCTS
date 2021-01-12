@@ -51,21 +51,23 @@ public class Experiments {
         // first, let's instantiate some agents
         final List<AI> agents = new ArrayList<AI>();
         agents.add(null);    // insert null at index 0, because player indices start at 1
-
+        MCTS_Vanilla player1 = new MCTS_Vanilla();
+        MCTS_Vanilla player2 = new MCTS_Vanilla();
         for (int p = 1; p <= numPlayers; ++p) {
             if (p % 2 != 0) {
                 // for half the agents, we'll use the Example Random AI from this repo
-                agents.add(new AMSPlayground());
+                agents.add(player1);
             } else {
                 // for the other half of the agents, we'll use our example UCT agent
-                agents.add(new MCTS_Vanilla());
+                agents.add(player2);
             }
         }
 
         // number of games we'd like to play
-        final int numGames = 1;
+        final int numGames = 10;
         int[] results = new int[2];
         long[] times = new long[2];
+        int[] iterations = new int[2];
         int[] selectedActions = new int[2];
 
         // NOTE: in our following loop through number of games, the different
@@ -137,11 +139,13 @@ public class Experiments {
 //                    System.out.print(selectionTime);
                     times[0] += selectionTime;
                     selectedActions[0] += 1;
+                    iterations[0] += player1.getIterations();
                 }
                 if(mover == 2) {
 //                    System.out.print(", " + selectionTime + "\n");
                     times[1] += selectionTime;
                     selectedActions[1] += 1;
+                    iterations[1] += player2.getIterations();
                 }
                 // apply the chosen move
                 game.apply(context, move);
@@ -173,6 +177,10 @@ public class Experiments {
         System.out.println("average selection times = " +
                 times[0]/selectedActions[0] + "/" +
                 times[1]/selectedActions[1]);
+        System.out.println();
+        System.out.println("average number of iterations = " +
+                iterations[0]/selectedActions[0] + "/" +
+                iterations[1]/selectedActions[1]);
         System.out.println();
         System.out.println("winning rate = " +
                 ((float)results[0]*100f)/(float)numGames + "/" +

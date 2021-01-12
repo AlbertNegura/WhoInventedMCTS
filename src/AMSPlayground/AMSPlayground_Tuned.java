@@ -43,7 +43,7 @@ public class AMSPlayground_Tuned extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
+    protected int iterations = 0;
     //-------------------------------------------------------------------------
 
     /**
@@ -80,8 +80,8 @@ public class AMSPlayground_Tuned extends AI {
 
         Random rand = new Random();
         int iteration = 0;
-        double discountFactor = 0.9;
-
+        double discountFactor = 1.0;
+        resetIterations();
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
         for (int p = 1; p <= game.players().size(); ++p) {
@@ -156,7 +156,7 @@ public class AMSPlayground_Tuned extends AI {
         }
 
         int bestMoveIndex = maxInteger(qValueUCB);
-
+        updateIterations(iteration);
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
@@ -246,7 +246,7 @@ public class AMSPlayground_Tuned extends AI {
         for (int i = 0; i < legalMoves.size(); ++i) {
             estimatedReturnValue += ((double) actionCount[i] / (iteration)) * qValue[i];
         }
-
+        updateIterations(iteration);
         return estimatedReturnValue;
     }
 
@@ -395,6 +395,18 @@ public class AMSPlayground_Tuned extends AI {
             return false;
 
         return true;
+    }
+
+    public int getIterations(){
+        return this.iterations;
+    }
+
+    protected void updateIterations(int iterations){
+        this.iterations += iterations;
+    }
+
+    protected void resetIterations(){
+        this.iterations = 0;
     }
 
     //-------------------------------------------------------------------------

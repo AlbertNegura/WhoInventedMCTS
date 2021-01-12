@@ -43,7 +43,7 @@ public class AMS_Rollout_BP_Tuned extends AI {
     protected Context lastSearchedRootContext = null;
     protected FVector rootValueEstimates = null;
     protected int numPlayersInGame = 0;
-
+    protected int iterations = 0;
     //-------------------------------------------------------------------------
 
     /**
@@ -82,7 +82,7 @@ public class AMS_Rollout_BP_Tuned extends AI {
         double discountFactor = 1.0;
 
         recursiveStackDepth = 0;
-
+        resetIterations();
         int[] opponents = new int[game.players().size() - 1];
         int idx = 0;
         for (int p = 1; p <= game.players().size(); ++p) {
@@ -161,7 +161,7 @@ public class AMS_Rollout_BP_Tuned extends AI {
         }
 
         int bestMoveIndex = maxInteger(qValueUCB);
-
+        updateIterations(iteration);
         // Return the move we wish to play
         return legalMoves.get(bestMoveIndex);
     }
@@ -263,7 +263,7 @@ public class AMS_Rollout_BP_Tuned extends AI {
                 estimatedReturnValue[p] += ((double) actionCount[i] / (iteration)) * qValue[p][i];
             }
         }
-
+        updateIterations(iterations);
         return estimatedReturnValue;
     }
 
@@ -449,6 +449,17 @@ public class AMS_Rollout_BP_Tuned extends AI {
         return true;
     }
 
+    public int getIterations(){
+        return this.iterations;
+    }
+
+    protected void updateIterations(int iterations){
+        this.iterations += iterations;
+    }
+
+    protected void resetIterations(){
+        this.iterations = 0;
+    }
     //-------------------------------------------------------------------------
 
     /**
