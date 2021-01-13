@@ -25,7 +25,7 @@ public class Experiments {
 
         // the game's "stateFlags" contain properties of the game that may be
         // important for some AI algorithms to know about
-        final long stateFlags = game.stateFlags();
+        final long stateFlags = game.gameFlags();
 
         // for example, we may like to know whether our game has stochastic elements
         final boolean isStochastic = ((stateFlags & GameType.Stochastic) != 0L);

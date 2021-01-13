@@ -30,8 +30,8 @@ public class MCTS_Vanilla extends Group12AI {
      */
     public MCTS_Vanilla(double C)
     {
-        this.friendlyName = "MCTS v2";
         this.C = C;
+        this.friendlyName = "MCTS v2 " + C;
     }
 
     //-------------------------------------------------------------------------

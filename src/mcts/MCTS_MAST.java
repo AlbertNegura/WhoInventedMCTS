@@ -1,5 +1,6 @@
 package mcts;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -12,7 +13,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_MAST extends AI {
+public class MCTS_MAST extends Group12AI {
 
     //-------------------------------------------------------------------------
 
@@ -31,9 +32,10 @@ public class MCTS_MAST extends AI {
      */
     public MCTS_MAST(double C)
     {
-        this.friendlyName = "MCTS MAST";
-        this.analysisReport = null;
         this.C = C;
+        this.friendlyName = "MCTS MAST " + C;
+        this.analysisReport = null;
+
     }
 
     //-------------------------------------------------------------------------

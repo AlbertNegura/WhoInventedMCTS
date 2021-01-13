@@ -1,5 +1,6 @@
 package mcts;
 
+import Group12.Group12AI;
 import game.Game;
 import game.rules.play.moves.nonDecision.effect.requirement.Do;
 import main.collections.FastArrayList;
@@ -14,7 +15,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_NSTv2 extends AI {
+public class MCTS_NSTv2 extends Group12AI {
 
     //-------------------------------------------------------------------------
 
@@ -37,9 +38,9 @@ public class MCTS_NSTv2 extends AI {
      */
     public MCTS_NSTv2(double C)
     {
-        this.friendlyName = "MCTS NST v2";
-        this.analysisReport = null;
         this.C = C;
+        this.friendlyName = "MCTS NST v2 " + C;
+        this.analysisReport = null;
     }
 
     //-------------------------------------------------------------------------

@@ -22,16 +22,16 @@ public class FinalExperiments {
     public static void main(final String[] args) {
         // one of the games is "Amazons.lud". Let's load it
         ArrayList<String> games = new ArrayList<String>();
-        games.add("Breakthrough.lud");
-//        games.add("Reversi.lud");
-//        games.add("Hnefatafl.lud");
+//        games.add("Breakthrough.lud");
+        games.add("Reversi.lud");
+        games.add("Hnefatafl.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
-//        mctsPlayers.add(new MCTS_Vanilla(0));
-//        mctsPlayers.add(new MCTS_Vanilla(0.2));
-//        mctsPlayers.add(new MCTS_Vanilla(0.6));
-//        mctsPlayers.add(new MCTS_Vanilla(0.8));
-//        mctsPlayers.add(new MCTS_Vanilla(1));
+        mctsPlayers.add(new MCTS_Vanilla(0));
+        mctsPlayers.add(new MCTS_Vanilla(0.2));
+        mctsPlayers.add(new MCTS_Vanilla(0.6));
+        mctsPlayers.add(new MCTS_Vanilla(0.8));
+        mctsPlayers.add(new MCTS_Vanilla(1));
 //        mctsPlayers.add(new MCTS_MAST(0));
 //        mctsPlayers.add(new MCTS_MAST(0.2));
 //        mctsPlayers.add(new MCTS_MAST(0.6));
@@ -44,11 +44,11 @@ public class FinalExperiments {
         mctsPlayers.add(new MCTS_NSTv2(1));
 
         ArrayList<Group12AI> amsPlayers = new ArrayList<>();
-//        amsPlayers.add(new MCTS_Vanilla(0.4));
-//        amsPlayers.add(new MCTS_Vanilla(0.4));
-//        amsPlayers.add(new MCTS_Vanilla(0.4));
-//        amsPlayers.add(new MCTS_Vanilla(0.4));
-//        amsPlayers.add(new MCTS_Vanilla(0.4));
+        amsPlayers.add(new MCTS_Vanilla(0.4));
+        amsPlayers.add(new MCTS_Vanilla(0.4));
+        amsPlayers.add(new MCTS_Vanilla(0.4));
+        amsPlayers.add(new MCTS_Vanilla(0.4));
+        amsPlayers.add(new MCTS_Vanilla(0.4));
 //        amsPlayers.add(new MCTS_MAST(0.4));
 //        amsPlayers.add(new MCTS_MAST(0.4));
 //        amsPlayers.add(new MCTS_MAST(0.4));
