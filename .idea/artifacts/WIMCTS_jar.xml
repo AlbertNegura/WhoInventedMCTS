@@ -1,9 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="WIMCTS:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/WIMCTS_jar</output-path>
-    <root id="archive" name="WIMCTS.jar">
-      <element id="module-output" name="WIMCTS" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../Ludii-1.0.7.jar" path-in-jar="/" />
-    </root>
-  </artifact>
-</component>

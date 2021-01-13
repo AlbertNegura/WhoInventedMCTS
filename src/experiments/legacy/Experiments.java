@@ -1,6 +1,5 @@
 package experiments.legacy;
 
-import AMSPlayground.*;
 import game.Game;
 import game.types.state.GameType;
 import main.collections.FastArrayList;
@@ -9,6 +8,7 @@ import util.*;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * A simple tutorial that demonstrates a variety of useful methods provided
@@ -25,7 +25,7 @@ public class Experiments {
 
         // the game's "stateFlags" contain properties of the game that may be
         // important for some AI algorithms to know about
-        final long stateFlags = game.gameFlags();
+        final long stateFlags = game.stateFlags();
 
         // for example, we may like to know whether our game has stochastic elements
         final boolean isStochastic = ((stateFlags & GameType.Stochastic) != 0L);
@@ -64,7 +64,7 @@ public class Experiments {
         }
 
         // number of games we'd like to play
-        final int numGames = 50;
+        final int numGames = 100;
         int[] results = new int[2];
         long[] times = new long[2];
         int[] iterations = new int[2];

@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="Ludii-1.0.7">
+  <library name="Ludii-1.0.5">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../../Ludii-1.0.7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../Ludii-1.0.5.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
