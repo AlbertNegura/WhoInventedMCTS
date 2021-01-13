@@ -23,22 +23,42 @@ public class FinalExperiments {
         // one of the games is "Amazons.lud". Let's load it
         ArrayList<String> games = new ArrayList<String>();
         games.add("Breakthrough.lud");
-        games.add("Reversi.lud");
-        games.add("Hnefatafl.lud");
+//        games.add("Reversi.lud");
+//        games.add("Hnefatafl.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
-        mctsPlayers.add(new MCTS_Vanilla(0));
-        mctsPlayers.add(new MCTS_Vanilla(0.2));
-        mctsPlayers.add(new MCTS_Vanilla(0.6));
-        mctsPlayers.add(new MCTS_Vanilla(0.8));
-        mctsPlayers.add(new MCTS_Vanilla(1));
+//        mctsPlayers.add(new MCTS_Vanilla(0));
+//        mctsPlayers.add(new MCTS_Vanilla(0.2));
+//        mctsPlayers.add(new MCTS_Vanilla(0.6));
+//        mctsPlayers.add(new MCTS_Vanilla(0.8));
+//        mctsPlayers.add(new MCTS_Vanilla(1));
+//        mctsPlayers.add(new MCTS_MAST(0));
+//        mctsPlayers.add(new MCTS_MAST(0.2));
+//        mctsPlayers.add(new MCTS_MAST(0.6));
+//        mctsPlayers.add(new MCTS_MAST(0.8));
+//        mctsPlayers.add(new MCTS_MAST(1));
+//        mctsPlayers.add(new MCTS_NSTv2(0));
+//        mctsPlayers.add(new MCTS_NSTv2(0.2));
+//        mctsPlayers.add(new MCTS_NSTv2(0.6));
+        mctsPlayers.add(new MCTS_NSTv2(0.8));
+        mctsPlayers.add(new MCTS_NSTv2(1));
 
         ArrayList<Group12AI> amsPlayers = new ArrayList<>();
-        amsPlayers.add(new MCTS_Vanilla(0.4));
-        amsPlayers.add(new MCTS_Vanilla(0.4));
-        amsPlayers.add(new MCTS_Vanilla(0.4));
-        amsPlayers.add(new MCTS_Vanilla(0.4));
-        amsPlayers.add(new MCTS_Vanilla(0.4));
+//        amsPlayers.add(new MCTS_Vanilla(0.4));
+//        amsPlayers.add(new MCTS_Vanilla(0.4));
+//        amsPlayers.add(new MCTS_Vanilla(0.4));
+//        amsPlayers.add(new MCTS_Vanilla(0.4));
+//        amsPlayers.add(new MCTS_Vanilla(0.4));
+//        amsPlayers.add(new MCTS_MAST(0.4));
+//        amsPlayers.add(new MCTS_MAST(0.4));
+//        amsPlayers.add(new MCTS_MAST(0.4));
+//        amsPlayers.add(new MCTS_MAST(0.4));
+//        amsPlayers.add(new MCTS_MAST(0.4));
+//        amsPlayers.add(new MCTS_NSTv2(0.4));
+//        amsPlayers.add(new MCTS_NSTv2(0.4));
+//        amsPlayers.add(new MCTS_NSTv2(0.4));
+        amsPlayers.add(new MCTS_NSTv2(0.4));
+        amsPlayers.add(new MCTS_NSTv2(0.4));
 
         for (int g = 0; g < games.size(); g++) {
             Game game = GameLoader.loadGameFromName(games.get(g));
@@ -64,9 +84,10 @@ public class FinalExperiments {
                 // now we're going to have a look at playing a few full games, using AI
 
                 // first, let's instantiate some agents
-                final List<Group12AI> agents = new ArrayList<>();
-                agents.add(null);    // insert null at index 0, because player indices start at 1
                 for (int q = 0; q < 2; q++) {
+                    final List<Group12AI> agents = new ArrayList<>();
+                    agents.add(null);    // insert null at index 0, because player indices start at 1
+
                     if (q == 0) {
                         for (int p = 1; p <= numPlayers; ++p) {
                             if (p % 2 != 0) {
@@ -91,7 +112,7 @@ public class FinalExperiments {
 
 
                     // number of games we'd like to play
-                    final int numGames = 1;
+                    final int numGames = 50;
                     int[] results = new int[2];
                     long[] times = new long[2];
                     int[] iterations = new int[2];
@@ -166,18 +187,17 @@ public class FinalExperiments {
 //                    System.out.print(selectionTime);
                                 times[0] += selectionTime;
                                 selectedActions[0] += 1;
-                                iterations[0] += agents.get(0).getIterations();
+                                iterations[0] += agents.get(1).getIterations();
                             }
                             if (mover == 2) {
 //                    System.out.print(", " + selectionTime + "\n");
                                 times[1] += selectionTime;
                                 selectedActions[1] += 1;
-                                iterations[1] += agents.get(1).getIterations();
+                                iterations[1] += agents.get(2).getIterations();
                             }
                             // apply the chosen move
                             game.apply(context, move);
                         }
-                        System.out.println();
                         int branching1sum = 0;
                         int branching2sum = 0;
                         for (int b = 0; b < branching1.size(); b++) {
@@ -194,7 +214,7 @@ public class FinalExperiments {
 //            System.out.println("average branching player 2: " + branching2sum/branching2.size());
 
                         // let's see who won
-                        if (i % 10 == 0) {
+                        if (i % 9 == 0) {
                             System.out.println("Game " + i + ": " + context.trial().status());
                         }
                         if (context.trial().status().winner() == 1)
@@ -202,20 +222,18 @@ public class FinalExperiments {
                         else if (context.trial().status().winner() == 2)
                             results[1]++;
                     }
-                    System.out.println();
-                    System.out.println(games.get(g) + ": " + mctsPlayers.get(pl).friendlyName + " vs " + amsPlayers.get(pl).friendlyName);
+                    System.out.println(games.get(g) + ": " + agents.get(1).friendlyName + " vs " + agents.get(2).friendlyName);
                     System.out.println("average selection times = " +
                             times[0] / selectedActions[0] + "/" +
                             times[1] / selectedActions[1]);
-                    System.out.println();
                     System.out.println("average number of iterations = " +
-                            iterations[0]/selectedActions[0] + "/" +
-                            iterations[1]/selectedActions[1]);
-                    System.out.println();
+                            iterations[0] / selectedActions[0] + "/" +
+                            iterations[1] / selectedActions[1]);
                     System.out.println("winning rate = " +
                             ((float) results[0] * 100f) / (float) numGames + "/" +
                             ((float) results[1] * 100f) / (float) numGames + "/" +
                             ((float) (numGames - (results[0] + results[1])) * 100f) / (float) numGames);
+                    System.out.println();
                 }
             }
         }
