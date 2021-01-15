@@ -25,8 +25,8 @@ public class FinalExperiments10 {
         games.add("Knightthrough.lud");
         games.add("Ultimate Tic-Tac-Toe.lud");
         games.add("Hex.lud");
-        games.add("Mu Torere.lud");
-        games.add("Hnefatafl.lud");
+//        games.add("Mu Torere.lud");
+//        games.add("Hnefatafl.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_NSTv2());
@@ -152,8 +152,8 @@ public class FinalExperiments10 {
                                     (
                                             game,
                                             new Context(context),
+                                            1,
                                             -1,
-                                            10,
                                             2
                                     );
                             long selectionTime = System.currentTimeMillis() - st;
