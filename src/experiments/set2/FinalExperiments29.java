@@ -25,8 +25,8 @@ public class FinalExperiments29 {
         games.add("Knightthrough.lud");
         games.add("Ultimate Tic-Tac-Toe.lud");
         games.add("Hex.lud");
-        games.add("Mu Torere.lud");
-        games.add("Hnefatafl.lud");
+//        games.add("Mu Torere.lud");
+//        games.add("Hnefatafl.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_MAST_Tuned());

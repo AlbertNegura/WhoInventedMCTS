@@ -175,23 +175,14 @@ public class MCTS_NSTv2 extends Group12AI {
 
         final int mover = currentNode.context.state().mover();
 
-        if (currentNode.children.size() == 0){
-            System.out.println("Children size == 0");
-        }
-        // currentnode children empty?? terminal
         for(int i = 0; i < currentNode.children.size(); i++){
             final Node child = currentNode.children.get(i);
             final double childValue = child.scoreSums[mover] / child.visitCount;
             final double ucbValue = childValue + C * Math.sqrt(parentLog / child.visitCount);
 
-            // unlikely
             if(ucbValue > bestValue) {
                 bestValue = ucbValue;
                 bestChild = child;
-            }
-
-            if(ucbValue == bestValue){
-                System.out.println("ucb == bestvalue");
             }
         }
 

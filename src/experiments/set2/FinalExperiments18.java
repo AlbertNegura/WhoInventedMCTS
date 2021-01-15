@@ -86,7 +86,7 @@ public class FinalExperiments18 {
 
 
                     // number of games we'd like to play
-                    final int numGames = 2;
+                    final int numGames = 50;
                     int[] results = new int[2];
                     long[] times = new long[2];
                     int[] iterations = new int[2];
@@ -152,8 +152,8 @@ public class FinalExperiments18 {
                                     (
                                             game,
                                             new Context(context),
+                                            1,
                                             -1,
-                                            10,
                                             2
                                     );
                             long selectionTime = System.currentTimeMillis() - st;
