@@ -1,5 +1,6 @@
 package mcts;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -12,7 +13,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_MAST_Tuned extends AI {
+public class MCTS_MAST_Tuned extends Group12AI {
 
     //-------------------------------------------------------------------------
 
@@ -23,17 +24,16 @@ public class MCTS_MAST_Tuned extends AI {
     protected Hashtable<Integer, Gram> grams;
     protected final double eps = 0.1;
     protected int iterations = 0;
-    protected double C;
+    protected double C = 0.4;
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_MAST_Tuned(double C)
+    public MCTS_MAST_Tuned()
     {
-        this.friendlyName = "MCTS MAST";
+        this.friendlyName = "MCTS MAST UCB1 Tuned";
         this.analysisReport = null;
-        this.C = C;
     }
 
     //-------------------------------------------------------------------------

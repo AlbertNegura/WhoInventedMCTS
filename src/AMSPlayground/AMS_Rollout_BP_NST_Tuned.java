@@ -1,5 +1,6 @@
 package AMSPlayground;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
@@ -27,7 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * @author Dennis Soemers
  */
-public class AMS_Rollout_BP_NST_Tuned extends AI {
+public class AMS_Rollout_BP_NST_Tuned extends Group12AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;
@@ -66,7 +67,7 @@ public class AMS_Rollout_BP_NST_Tuned extends AI {
      * Constructor
      */
     public AMS_Rollout_BP_NST_Tuned() {
-        this.friendlyName = "AMS_Rollout_BP NST";
+        this.friendlyName = "AMS_Rollout_BP NST UCB1 Tuned";
     }
 
     //-------------------------------------------------------------------------

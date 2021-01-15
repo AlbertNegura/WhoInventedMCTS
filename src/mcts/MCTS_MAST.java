@@ -24,16 +24,15 @@ public class MCTS_MAST extends Group12AI {
     protected Hashtable<Integer, Gram> grams;
     protected final double eps = 0.1;
     protected int iterations = 0;
-    protected double C;
+    protected double C = 0.4;
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_MAST(double C)
+    public MCTS_MAST()
     {
-        this.C = C;
-        this.friendlyName = "MCTS MAST " + C;
+        this.friendlyName = "MCTS MAST";
         this.analysisReport = null;
 
     }

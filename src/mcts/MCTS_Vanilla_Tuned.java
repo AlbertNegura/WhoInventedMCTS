@@ -1,5 +1,6 @@
 package mcts;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -11,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_Vanilla_Tuned extends AI {
+public class MCTS_Vanilla_Tuned extends Group12AI {
 
     //-------------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ public class MCTS_Vanilla_Tuned extends AI {
      */
     public MCTS_Vanilla_Tuned()
     {
-        this.friendlyName = "MCTS";
+        this.friendlyName = "MCTS Vanilla UCB1 Tuned";
         this.analysisReport = null;
     }
 

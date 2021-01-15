@@ -21,17 +21,16 @@ public class MCTS_Vanilla extends Group12AI {
     protected String analysisReport;
     protected int lastNumPlayoutActions;
     public int iterations = 0;
-    protected double C;
+    protected double C = 0.4;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_Vanilla(double C)
+    public MCTS_Vanilla()
     {
-        this.C = C;
-        this.friendlyName = "MCTS v2 " + C;
+        this.friendlyName = "MCTS Vanilla";
     }
 
     //-------------------------------------------------------------------------

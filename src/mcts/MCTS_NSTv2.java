@@ -29,17 +29,16 @@ public class MCTS_NSTv2 extends Group12AI {
     protected final int MIN_VISITS = 7;
     protected final double eps = 0.1;
     protected int iterations = 0;
-    protected double C;
+    protected double C = 0.4;
 
     //-------------------------------------------------------------------------
 
     /**
      * Constructor
      */
-    public MCTS_NSTv2(double C)
+    public MCTS_NSTv2()
     {
-        this.C = C;
-        this.friendlyName = "MCTS NST v2 " + C;
+        this.friendlyName = "MCTS NST";
         this.analysisReport = null;
     }
 

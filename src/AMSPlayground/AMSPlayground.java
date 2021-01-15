@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.lang.Math;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FVector;
 import main.collections.FastArrayList;
@@ -28,7 +29,7 @@ import utils.AIUtils;
  *
  * @author Dennis Soemers
  */
-public class AMSPlayground extends AI {
+public class AMSPlayground extends Group12AI {
 
     private Heuristics heuristicValueFunction = null;
     private final boolean heuristicsFromMetadata = true;

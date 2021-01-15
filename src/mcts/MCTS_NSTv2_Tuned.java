@@ -1,5 +1,6 @@
 package mcts;
 
+import Group12.Group12AI;
 import game.Game;
 import main.collections.FastArrayList;
 import util.AI;
@@ -12,7 +13,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MCTS_NSTv2_Tuned extends AI {
+public class MCTS_NSTv2_Tuned extends Group12AI {
 
     //-------------------------------------------------------------------------
 
@@ -37,7 +38,7 @@ public class MCTS_NSTv2_Tuned extends AI {
      */
     public MCTS_NSTv2_Tuned()
     {
-        this.friendlyName = "MCTS NST v2 UCB1-Tuned";
+        this.friendlyName = "MCTS NST UCB1-Tuned";
         this.analysisReport = null;
     }
 
@@ -105,66 +106,57 @@ public class MCTS_NSTv2_Tuned extends AI {
         // If there is any unexpanded move from the current node...
         if (!currentNode.unexpandedMoves.isEmpty())
         {
-            // ... randomly select an unexpanded move
-            final Move move = currentNode.unexpandedMoves.remove(
-                    ThreadLocalRandom.current().nextInt(currentNode.unexpandedMoves.size()));
-
             // create a copy of context
             final Context context = new Context(currentNode.context);
-//
-//            FastArrayList<Move> unexpandedMoves = currentNode.unexpandedMoves;
-//
-//            int bestMoveIndex = -1;
-//            Move bestMove = null;
-//            final double p = ThreadLocalRandom.current().nextDouble(1d);
-//            if (true){   // Explore
-//                final int r = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());
-//                bestMove = unexpandedMoves.get(r);
-//                bestMoveIndex = r;
-//            }
-//
-//            else {          // Exploit
-//                double bestScore = Double.NEGATIVE_INFINITY;
-//                int numBestFound = 0;
-//
-//                for (int m = 0; m < unexpandedMoves.size(); m++) {
-//                    Move evaluatingMove = unexpandedMoves.get(m);
-//                    final int mover = context.state().mover();
-//
-//                    ArrayList<Double> gramScoreSums = new ArrayList<>();
-//
-//                    Gram currentGram = grams.get(evaluatingMove.hashCode());
-//
-//                    if(currentGram != null){
-//                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
-//                    }
-//
-//                    else{
-//                        gramScoreSums.add(Double.MAX_VALUE);
-//                    }
-//
-//                    double moveScore = 0;
-//
-//                    for (int i = 0; i < gramScoreSums.size(); i++){
-//                        moveScore += gramScoreSums.get(i);
-//                    }
-//
-//                    moveScore = moveScore / gramScoreSums.size();
-//
-//                    if (moveScore > bestScore) {
-//                        bestScore = moveScore;
-//                        bestMove = evaluatingMove;
-//                        bestMoveIndex = m;
-//                        numBestFound = 1;
-//                    } else if (moveScore == bestScore &&
-//                            ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
-//                        bestMove = evaluatingMove;
-//                        bestMoveIndex = m;
-//                    }
-//                }
-//            }
-//
-//            final Move move = currentNode.unexpandedMoves.remove(bestMoveIndex);
+
+            FastArrayList<Move> unexpandedMoves = currentNode.unexpandedMoves;
+
+            int bestMoveIndex = -1;
+            final double p = ThreadLocalRandom.current().nextDouble(1d);
+            if (p <= eps){   // Explore
+                bestMoveIndex = ThreadLocalRandom.current().nextInt(unexpandedMoves.size());
+            }
+
+            else {          // Exploit
+                double bestScore = Double.NEGATIVE_INFINITY;
+                int numBestFound = 0;
+
+                for (int m = 0; m < unexpandedMoves.size(); m++) {
+                    Move evaluatingMove = unexpandedMoves.get(m);
+                    final int mover = context.state().mover();
+
+                    ArrayList<Double> gramScoreSums = new ArrayList<>();
+
+                    Gram currentGram = grams.get(evaluatingMove.hashCode());
+
+                    if(currentGram != null){
+                        gramScoreSums = getGramsScoreSums(currentGram, gramScoreSums, history, history.size(), 1, mover);
+                    }
+
+                    else{
+                        gramScoreSums.add(Double.MAX_VALUE);
+                    }
+
+                    double moveScore = 0;
+
+                    for (int i = 0; i < gramScoreSums.size(); i++){
+                        moveScore += gramScoreSums.get(i);
+                    }
+
+                    moveScore = moveScore / gramScoreSums.size();
+
+                    if (moveScore > bestScore) {
+                        bestScore = moveScore;
+                        bestMoveIndex = m;
+                        numBestFound = 1;
+                    } else if (moveScore == bestScore &&
+                            ThreadLocalRandom.current().nextInt() % ++numBestFound == 0) {
+                        bestMoveIndex = m;
+                    }
+                }
+            }
+
+            final Move move = currentNode.unexpandedMoves.remove(bestMoveIndex);
 
             // apply the move
             context.game().apply(context, move);
