@@ -86,7 +86,7 @@ public class FinalExperiments10 {
 
 
                     // number of games we'd like to play
-                    final int numGames = 2;
+                    final int numGames = 50;
                     int[] results = new int[2];
                     long[] times = new long[2];
                     int[] iterations = new int[2];
