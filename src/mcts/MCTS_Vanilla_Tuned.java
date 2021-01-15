@@ -157,18 +157,20 @@ public class MCTS_Vanilla_Tuned extends Group12AI {
 //            final double childValue = child.scoreSums[player] / child.visitCount;
             final double childValue = child.scoreSums[mover] / child.visitCount;
             final double variance = childValue * (1-childValue);
-            final double ucbValue = childValue + Math.sqrt(parentLog / child.visitCount * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
+            final double ucbValue = childValue + Math.sqrt((parentLog / child.visitCount) * Math.min(.25, variance + Math.sqrt(2 * parentLog/ child.visitCount)));
 
 //            final double exploit = child.scoreSums[mover] / child.visitCount;
 //            final double explore = Math.sqrt(twoParentLog / child.visitCount);
 //            final double ucb1Value = exploit + explore;
-
             if(ucbValue > bestValue) {
                 bestValue = ucbValue;
                 bestChild = child;
             }
+            if (bestChild == null){
+                bestValue = ucbValue;
+                bestChild = child;
+            }
         }
-
         return bestChild;
     }
 

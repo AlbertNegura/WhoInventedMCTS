@@ -175,6 +175,10 @@ public class MCTS_MAST_Tuned extends Group12AI {
                 bestValue = ucbValue;
                 bestChild = child;
             }
+            if (bestChild == null){
+                bestValue = ucbValue;
+                bestChild = child;
+            }
         }
 
         return bestChild;
