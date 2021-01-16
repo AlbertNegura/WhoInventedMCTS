@@ -184,6 +184,10 @@ public class MCTS_NSTv2 extends Group12AI {
                 bestValue = ucbValue;
                 bestChild = child;
             }
+            if (bestChild == null){
+                bestValue = ucbValue;
+                bestChild = child;
+            }
         }
 
         return bestChild;
@@ -353,7 +357,10 @@ public class MCTS_NSTv2 extends Group12AI {
                 bestValue = childValue;
                 bestChild = child;
             }
-
+            if (bestChild == null){
+                bestValue = childValue;
+                bestChild = child;
+            }
         }
 
         return bestChild.moveFromParent;

@@ -407,7 +407,10 @@ public class MCTS_NSTv2_Tuned extends Group12AI {
                 bestValue = childValue;
                 bestChild = child;
             }
-
+            if (bestChild == null){
+                bestValue = childValue;
+                bestChild = child;
+            }
         }
 
         return bestChild.moveFromParent;
