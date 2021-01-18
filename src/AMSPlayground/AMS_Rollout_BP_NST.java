@@ -218,7 +218,7 @@ public class AMS_Rollout_BP_NST extends Group12AI {
                 returnedValues = AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             }
 
-            values = Backpropagation(current, returnedValues, values, i);
+            values = Backpropagation(current, returnedValues.clone(), values.clone(), i);
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
@@ -260,7 +260,7 @@ public class AMS_Rollout_BP_NST extends Group12AI {
                 returnedValues = AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             }
 
-            vHatValuesSum = Backpropagation(current, returnedValues, vHatValuesSum, bestMoveIndex);
+            vHatValuesSum = Backpropagation(current, returnedValues.clone(), vHatValuesSum.clone(), bestMoveIndex);
             ++iteration;
             copyContext = new Context(context);
         }
@@ -391,11 +391,11 @@ public class AMS_Rollout_BP_NST extends Group12AI {
         for (int i = 0; i < history.size(); ++i){
             Gram currentGram = this.grams.get(history.get(i).hashCode());
             if (currentGram == null){
-                addGram(null, history, i, 1, results);
+                addGram(null, history, i, 1, results.clone());
             }
 
             else {
-                updateGramsScoreSums(currentGram, history, i, 1, results);
+                updateGramsScoreSums(currentGram, history, i, 1, results.clone());
             }
         }
 

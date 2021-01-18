@@ -70,7 +70,7 @@ public class MCTS_NSTv2 extends Group12AI {
             // A simulated game is played
             double[] result = PlayOut(selectedNode);
             // The result is backpropagated
-            Backpropagation(selectedNode, result);
+            Backpropagation(selectedNode, result.clone());
             numIterations++;
         }
         Move bestMove = finalMoveSelection(root);
@@ -270,11 +270,11 @@ public class MCTS_NSTv2 extends Group12AI {
         for (int i = 0; i < history.size(); ++i){
             Gram currentGram = this.grams.get(history.get(i).hashCode());
             if (currentGram == null){
-                addGram(null, history, i, 1, results);
+                addGram(null, history, i, 1, results.clone());
             }
 
             else {
-                updateGramsScoreSums(currentGram, history, i, 1, results);
+                updateGramsScoreSums(currentGram, history, i, 1, results.clone());
             }
         }
 
@@ -406,7 +406,7 @@ public class MCTS_NSTv2 extends Group12AI {
         public Gram(final Move move, final Gram nextGram, final double[] scoreSums){
             this.previousGram = new Hashtable<>();
             this.visitCount = 1;
-            this.scoreSums = scoreSums;
+            this.scoreSums = scoreSums.clone();
 
             if (nextGram != null){
                 nextGram.previousGram.put(move.hashCode(), this);

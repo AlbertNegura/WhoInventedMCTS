@@ -211,7 +211,7 @@ public class AMS_Tim extends Group12AI {
                 returnedValues = AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             }
 
-            values = Backpropagation(current, returnedValues, values, i);
+            values = Backpropagation(current, returnedValues.clone(), values.clone(), i);
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
@@ -253,7 +253,7 @@ public class AMS_Tim extends Group12AI {
                 returnedValues = AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             }
 
-            vHatValuesSum = Backpropagation(current, returnedValues, vHatValuesSum, bestMoveIndex);
+            vHatValuesSum = Backpropagation(current, returnedValues.clone(), vHatValuesSum.clone(), bestMoveIndex);
             ++iteration;
             copyContext = new Context(context);
         }
