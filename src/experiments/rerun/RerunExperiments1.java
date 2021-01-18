@@ -1,11 +1,11 @@
-package experiments.set1;
+package experiments.rerun;
 
-import AMSPlayground.AMSPlayground;
+import AMSPlayground.*;
+import mcts.*;
 import Group12.Group12AI;
 import game.Game;
 import game.types.state.GameType;
 import main.collections.FastArrayList;
-import mcts.MCTS_MAST;
 import util.*;
 
 import java.util.ArrayList;
@@ -17,17 +17,19 @@ import java.util.List;
  *
  * @author Dennis Soemers
  */
-public class FinalExperiments11 {
+public class RerunExperiments1 {
 
     public static void main(final String[] args) {
         // one of the games is "Amazons.lud". Let's load it
         ArrayList<String> games = new ArrayList<String>();
-        games.add("Breakthrough.lud");
-//        games.add("Yavalath.lud");
-//        games.add("Connect Four.lud");
-//        games.add("Nine Men’s Morris.lud");
-//        games.add("Wolf and Sheep.lud");
-
+        games.add("Connect Four.lud");
+        games.add("Hex.lud");
+        games.add("Reversi.lud");
+        games.add("Yavalath.lud");
+        games.add("Ultimate Tic-Tac-Toe.lud");
+        games.add("Tic-Tac-Chess.lud");
+        games.add("Skirmish (GDL).lud");
+        games.add("Havannah.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_MAST());

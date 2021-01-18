@@ -1,6 +1,7 @@
-package experiments.set1;
+package experiments.rerun;
 
-import AMSPlayground.AMSPlayground;
+import AMSPlayground.AMS_Rollout_BP_MAST;
+import AMSPlayground.AMS_Rollout_BP_NST;
 import Group12.Group12AI;
 import game.Game;
 import game.types.state.GameType;
@@ -17,23 +18,25 @@ import java.util.List;
  *
  * @author Dennis Soemers
  */
-public class FinalExperiments11 {
+public class RerunExperiments4 {
 
     public static void main(final String[] args) {
         // one of the games is "Amazons.lud". Let's load it
         ArrayList<String> games = new ArrayList<String>();
-        games.add("Breakthrough.lud");
-//        games.add("Yavalath.lud");
-//        games.add("Connect Four.lud");
-//        games.add("Nine Men’s Morris.lud");
-//        games.add("Wolf and Sheep.lud");
-
+        games.add("Connect Four.lud");
+        games.add("Hex.lud");
+        games.add("Reversi.lud");
+        games.add("Yavalath.lud");
+        games.add("Ultimate Tic-Tac-Toe.lud");
+        games.add("Tic-Tac-Chess.lud");
+        games.add("Skirmish (GDL).lud");
+        games.add("Havannah.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_MAST());
 
         ArrayList<Group12AI> amsPlayers = new ArrayList<>();
-        amsPlayers.add(new AMSPlayground());
+        amsPlayers.add(new AMS_Rollout_BP_NST());
 
         for (int g = 0; g < games.size(); g++) {
             Game game = GameLoader.loadGameFromName(games.get(g));
