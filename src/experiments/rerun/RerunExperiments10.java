@@ -29,6 +29,8 @@ public class RerunExperiments10 {
         games.add("Yavalath.lud");
         games.add("Ultimate Tic-Tac-Toe.lud");
         games.add("Tic-Tac-Chess.lud");
+        games.add("Breakthrough.lud");
+        games.add("Knightthrough.lud");
         games.add("Skirmish (GDL).lud");
         games.add("Havannah.lud");
 
