@@ -58,7 +58,7 @@ public class AMSPlayground_Tuned extends Group12AI {
      * Constructor
      */
     public AMSPlayground_Tuned() {
-        this.friendlyName = "AMSPlayground UCB1 Tuned";
+        this.friendlyName = "AMSPlayground Tuned";
     }
 
     //-------------------------------------------------------------------------

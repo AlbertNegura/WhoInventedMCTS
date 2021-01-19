@@ -60,7 +60,7 @@ public class AMS_Tim_Tuned extends Group12AI {
      * Constructor
      */
     public AMS_Tim_Tuned() {
-        this.friendlyName = "AMS_Tim UCB1 Tuned";
+        this.friendlyName = "AMS_Tim Tuned";
     }
 
     //-------------------------------------------------------------------------
@@ -210,7 +210,7 @@ public class AMS_Tim_Tuned extends Group12AI {
                 returnedValues = AMS(copyGame, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             }
 
-            values = Backpropagation(current, returnedValues, values, i);
+            values = Backpropagation(current, returnedValues.clone(), values.clone(), i);
             copyGame = game;
             ++iteration;
             copyContext = new Context(context);
@@ -254,7 +254,7 @@ public class AMS_Tim_Tuned extends Group12AI {
                 returnedValues = AMS(game, copyContext, maxIterations, depth - 1, opponents[0], stopTime);
             }
 
-            vHatValuesSum = Backpropagation(current, returnedValues, vHatValuesSum, bestMoveIndex);
+            vHatValuesSum = Backpropagation(current, returnedValues.clone(), vHatValuesSum.clone(), bestMoveIndex);
             ++iteration;
             copyContext = new Context(context);
         }
@@ -312,7 +312,7 @@ public class AMS_Tim_Tuned extends Group12AI {
     private double[][] Backpropagation(Node currentNode, double[] result, double[][] values, int action) {
 
         final int playersCount = currentNode.context.game().players().count();
-        double[][] results = values;
+        double[][] results = values.clone();
         for (int player = 0; player <= playersCount; player++) {
             results[player][action] += result[player];
         }

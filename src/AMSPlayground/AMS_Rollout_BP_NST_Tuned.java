@@ -67,7 +67,7 @@ public class AMS_Rollout_BP_NST_Tuned extends Group12AI {
      * Constructor
      */
     public AMS_Rollout_BP_NST_Tuned() {
-        this.friendlyName = "AMS_Rollout_BP NST UCB1 Tuned";
+        this.friendlyName = "AMS NST Tuned";
     }
 
     //-------------------------------------------------------------------------
@@ -456,7 +456,7 @@ public class AMS_Rollout_BP_NST_Tuned extends Group12AI {
     private double[][] Backpropagation(Node currentNode, double[] result, double[][] values, int action) {
 
         final int playersCount = currentNode.context.game().players().count();
-        double[][] results = values;
+        double[][] results = values.clone();
         for (int player = 0; player <= playersCount; player++) {
             results[player][action] += result[player];
         }
