@@ -26,8 +26,8 @@ public class ThreadedExperiments {
     public static void main(final String[] args) throws ExecutionException, InterruptedException {
         // one of the games is "Amazons.lud". Let's load it
         ArrayList<String> games = new ArrayList<String>();
-//        games.add("Breakthrough.lud");
-        games.add("Skirmish (GDL).lud");
+        games.add("Breakthrough.lud");
+//        games.add("Skirmish (GDL).lud");
 //        games.add("Tic-Tac-Chess.lud");
 //        games.add("Reversi.lud");
 //        games.add("Hnefatafl.lud");
@@ -39,7 +39,7 @@ public class ThreadedExperiments {
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new AMS_Rollout_BP());
-        mctsPlayers.add(new MCTS_Vanilla(0.4));
+        mctsPlayers.add(new MCTS_Vanilla());
 //        mctsPlayers.add(new MCTS_Vanilla(0.4));
 //        mctsPlayers.add(new MCTS_Vanilla(0.4));
 //        mctsPlayers.add(new MCTS_Vanilla(0.4));
