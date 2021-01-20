@@ -1,8 +1,6 @@
-<img align="right" src="./resources/ludii-logo-64x64.png">
-
 # Who Invented MCTS
 
-Project git for the "Who Invented MCTS?" Masters project from the MSc. Artificial Intelligence programme at Maastricht University. This project ran from 09/2020 to 02/2021.
+Project git for the "Who Invented MCTS?" Masters project from the MSc. Artificial Intelligence programme at Maastricht University. This project ran from 09/2020 to 02/2021. A complete report for this project can be found [here](report/MRP_Who_Invented_MCTS_Group_12.pdf).
 
 ## Please note step 3 in the getting started section below!
 
@@ -67,9 +65,6 @@ your project.
 	know not to try to make your AI play such a game.
 	4. `public void closeAI()`. This method can be used to perform any cleanup of resources
 	when a game has been finished.
-For a simple example class that extends this abstract class, see the 
-[Example Random AI](src/legacy/random/RandomAI.java).
-5. Export your project to a new JAR file.
 
 ### Loading AI in the Ludii Application
 
@@ -101,35 +96,31 @@ wish to try loading agents from the modified JAR file.
 
 ## Implemented Agents
 
-- [AMS](src/legacy/ams/AMS.java).
-- [Random AI](src/legacy/random/RandomAI.java).
-- [Example UCT](src/mcts/ExampleUCT.java) (only supports deterministic, alternating-move games).
-- [Example Decoupled UCT](src/mcts/ExampleDUCT.java) (only supporst deterministic, simultaneous-move games).
+UCB1/UCT Agents:
+- [AMS](src/AMSPlaygroung/AMSPlayground.java).
+- [AMS-Play-outs](src/AMSPlaygroung/AMS_Rollout_BP.java).
+- [AMS-Priority](src/AMSPlaygroung/AMS_Tim.java).
+- [AMS-MAST](src/AMSPlaygroung/AMS_Rollout_BP_MAST.java).
+- [AMS-NST](src//AMSPlaygroung/AMS_Rollout_BP_NST.java).
+- [MCTS](src/mcts/MCTS-Vanilla.java).
+- [MCTS-MAST](src/mcts/MCTS-MAST.java).
+- [MCTS-NST](src/mcts/MCTS-NST.java).
 
-## Citing Information
-
-When using Ludii in any publications (for example for running experiments, or
-for visual inspections of your agent's behaviour during development, etc.), 
-please cite [our paper on the Ludii system](https://arxiv.org/abs/1905.05013).
-This can be done using the following BibTeX entry:
-
-	@inproceedings{Piette2020Ludii,
-            author      = "{\'E}. Piette and D. J. N. J. Soemers and M. Stephenson and C. F. Sironi and M. H. M. Winands and C. Browne",
-            booktitle   = "Proceedings of the 24th European Conference on Artificial Intelligence (ECAI 2020)",
-            title       = "Ludii -- The Ludemic General Game System",
-            pages       = "411-418",
-            year        = "2020",
-            editor      = "G. De Giacomo and A. Catala and B. Dilkina and M. Milano and S. Barro and A. Bugarín and J. Lang",
-            series      = "Frontiers in Artificial Intelligence and Applications",
-            volume      = "325",
-			publisher	= "IOS Press"
-        }
+UCB1-Tuned Agents:
+- [AMS](src/AMSPlaygroung/AMSPlayground_Tuned.java).
+- [AMS-Play-outs](src/AMSPlaygroung/AMS_Rollout_BP_Tuned.java).
+- [AMS-Priority](src/AMSPlaygroung/AMS_Tim_Tuned.java).
+- [AMS-MAST](src/AMSPlaygroung/AMS_Rollout_BP_MAST_Tuned.java).
+- [AMS-NST](src//AMSPlaygroung/AMS_Rollout_BP_NST_Tuned.java).
+- [MCTS](src/mcts/MCTS-Vanilla_Tuned.java).
+- [MCTS-MAST](src/mcts/MCTS-MAST_Tuned.java).
+- [MCTS-NST](src/mcts/MCTS-NST_Tuned.java).
 
 ## Background Info
 
 This repository contains a modification of the Adaptive Multi-stage Sampling
 algorithm such that it can be executed within the Ludii General Game System.
-An implementation of Monte-Carlo Tree Search and other enhancements are also
+An implementation of Monte-Carlo Tree Search and other enhancements (specifically MAST, NST and UCB1-Tuned) are also
 contained within this repository. Note that this repository does not contain 
 the full Ludii system, or its built-in AI options.
 
