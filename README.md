@@ -1,7 +1,6 @@
 # Who Invented MCTS
 
-Project git for the "Who Invented MCTS?" Masters project from the MSc. Artificial Intelligence programme at Maastricht University. This project ran from 09/2020 to 02/2021. A complete report for this project can be found [here](report/MRP_Who_Invented_MCTS_Group_12.pdf).
-
+Project git for the "Who Invented MCTS?" Masters project from the MSc. Artificial Intelligence programme at Maastricht University. This project ran from 09/2020 to 02/2021.
 ## Please note step 3 in the getting started section below!
 
 
