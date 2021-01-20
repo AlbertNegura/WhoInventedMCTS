@@ -28,7 +28,7 @@ public class MCTS_Vanilla_Tuned extends Group12AI {
      */
     public MCTS_Vanilla_Tuned()
     {
-        this.friendlyName = "MCTS Vanilla UCB1 Tuned";
+        this.friendlyName = "MCTS Vanilla Tuned";
         this.analysisReport = null;
     }
 
@@ -59,7 +59,7 @@ public class MCTS_Vanilla_Tuned extends Group12AI {
             // A simulated game is played
             double[] result = PlayOut(selectedNode);
             // The result is backpropagated
-            Backpropagation(selectedNode, result);
+            Backpropagation(selectedNode, result.clone());
             numIterations++;
         }
         Move bestMove = finalMoveSelection(root);

@@ -32,7 +32,7 @@ public class MCTS_MAST_Tuned extends Group12AI {
      */
     public MCTS_MAST_Tuned()
     {
-        this.friendlyName = "MCTS MAST UCB1 Tuned";
+        this.friendlyName = "MCTS MAST Tuned";
         this.analysisReport = null;
     }
 
@@ -64,7 +64,7 @@ public class MCTS_MAST_Tuned extends Group12AI {
             // A simulated game is played
             double[] result = PlayOut(selectedNode);
             // The result is backpropagated
-            Backpropagation(selectedNode, result);
+            Backpropagation(selectedNode, result.clone());
             numIterations++;
         }
 
@@ -250,12 +250,12 @@ public class MCTS_MAST_Tuned extends Group12AI {
             Gram currentGram = this.grams.get(history.get(i).hashCode());
             if (currentGram == null){
                 Move currentMove = history.get(i);
-                Gram newGram = new Gram(results);
+                Gram newGram = new Gram(results.clone());
                 grams.put(currentMove.hashCode(), newGram);
             }
 
             else {
-                currentGram.UpdateScoreSums(results);
+                currentGram.UpdateScoreSums(results.clone());
             }
         }
 
@@ -342,7 +342,7 @@ public class MCTS_MAST_Tuned extends Group12AI {
 
         public Gram(final double[] scoreSums){
             this.visitCount = 1;
-            this.scoreSums = scoreSums;
+            this.scoreSums = scoreSums.clone();
         }
 
         public double MoverScoreSums(int mover){

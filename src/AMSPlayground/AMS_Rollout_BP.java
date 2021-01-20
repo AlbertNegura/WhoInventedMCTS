@@ -311,7 +311,7 @@ public class AMS_Rollout_BP extends Group12AI {
     private double[][] Backpropagation(Node currentNode, double[] result, double[][] values, int action) {
 
         final int playersCount = currentNode.context.game().players().count();
-        double[][] results = values;
+        double[][] results = values.clone();
         for (int player = 0; player <= playersCount; player++) {
             results[player][action] += result[player];
         }

@@ -80,7 +80,7 @@ public class AMS_Play_TT extends Group12AI {
 
         // We'll respect any limitations on max seconds and max iterations (don't care about max depth)
         final long stopTime = (maxSeconds > 0.0) ? System.currentTimeMillis() + (long) (maxSeconds * 1000L) : Long.MAX_VALUE;
-        final int maxIts = (maxIterations >= 0) ? maxDepth : 10000000;
+        final int maxIts = (maxIterations >= 0) ? maxIterations : 10000000;
 
         Random rand = new Random();
         int iteration = 0;
