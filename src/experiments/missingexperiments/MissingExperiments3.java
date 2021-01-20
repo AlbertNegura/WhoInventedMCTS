@@ -27,9 +27,7 @@ public class MissingExperiments3 {
         games.add("Tic-Tac-Chess.lud");
         games.add("Breakthrough.lud");
         games.add("Knightthrough.lud");
-        games.add("Reversi.lud");
-        games.add("Skirmish (GDL).lud");
-        games.add("Yavalath.lud");
+
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_Vanilla());

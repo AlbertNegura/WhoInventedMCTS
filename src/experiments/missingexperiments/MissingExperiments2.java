@@ -27,8 +27,6 @@ public class MissingExperiments2 {
         games.add("Ultimate Tic-Tac-Toe.lud");
         games.add("Tic-Tac-Chess.lud");
         games.add("Breakthrough.lud");
-        games.add("Knightthrough.lud");
-        games.add("Yavalath.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_MAST());

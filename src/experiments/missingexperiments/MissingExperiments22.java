@@ -1,13 +1,11 @@
 package experiments.missingexperiments;
 
 import AMSPlayground.AMS_Rollout_BP;
-import AMSPlayground.AMS_Rollout_BP_NST;
 import Group12.Group12AI;
 import game.Game;
 import game.types.state.GameType;
 import main.collections.FastArrayList;
-import mcts.MCTS_NSTv2;
-import mcts.MCTS_Vanilla;
+import mcts.MCTS_MAST;
 import util.*;
 
 import java.util.ArrayList;
@@ -19,21 +17,20 @@ import java.util.List;
  *
  * @author Dennis Soemers
  */
-public class MissingExperiments4 {
+public class MissingExperiments22 {
 
     public static void main(final String[] args) {
         // one of the games is "Amazons.lud". Let's load it
         ArrayList<String> games = new ArrayList<String>();
-        games.add("Ultimate Tic-Tac-Toe.lud");
-        games.add("Tic-Tac-Chess.lud");
-        games.add("Breakthrough.lud");
+
         games.add("Knightthrough.lud");
+        games.add("Yavalath.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
-        mctsPlayers.add(new MCTS_NSTv2());
+        mctsPlayers.add(new MCTS_MAST());
 
         ArrayList<Group12AI> amsPlayers = new ArrayList<>();
-        amsPlayers.add(new AMS_Rollout_BP_NST());
+        amsPlayers.add(new AMS_Rollout_BP());
 
         for (int g = 0; g < games.size(); g++) {
             Game game = GameLoader.loadGameFromName(games.get(g));
