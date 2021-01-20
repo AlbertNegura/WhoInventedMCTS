@@ -26,7 +26,6 @@ public class MissingExperiments11 {
         games.add("Reversi.lud");
         games.add("Skirmish (GDL).lud");
         games.add("Yavalath.lud");
-        games.add("Hex.lud");
 
         ArrayList<Group12AI> mctsPlayers = new ArrayList<>();
         mctsPlayers.add(new MCTS_Vanilla());
